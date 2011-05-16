@@ -1,10 +1,11 @@
+require 'jvm-gc-stats/tailer'
+
 module JvmGcStats
 
   # If you wish to change the report method, simply open this class, make your changes, and
   # instantiate it. You may also extend it if that's your jam.
   #
   class JvmGcStats
-    # Initializing the class will process stdin for command-line args and start processing.
     def initialize(filename, report, prefix, report_timeout, tail_sleep_secs, tail, debug)
       @filename = filename
       @report = report
@@ -30,83 +31,13 @@ module JvmGcStats
       end
     end
 
-    # Returns a File object in read-mode for a given file. defaults to @filename
-    def open_file(file=@filename)
-      File.new(file, "r")
-    end
-
-    TAIL_BLOCK_SIZE = 2048
     ALL_MEASUREMENTS = %w[promoFail.realSec major.concur.userSec major.concur.realSec major.block.userSec] +
                        %w[%s.survivalRatio %s.kbytesPerSec %s.userSec %s.realSec].collect{|m| %w[minor full].collect{|s| m % s}}.flatten
 
-    # Read a file, optionally just the tail of the file (based on the @tail variable)
-    # and for each logline, report it's stats.
-    def tail(file=@filename)
-      # There are 4 scenarios this code has to handle
-      #  empty read
-      #  partial read (no full record)
-      #  full record (ending on a \n)
-      #  full record with partial record
-      f = open_file(file)
-      f.seek(0, IO::SEEK_END) if @tail
-      stat = f.stat
-      current_inode, current_dev, current_size = stat.ino, stat.dev, stat.size
-      lines = ""
-
-      # Loop forever, reading every @tail_sleep_secs
-      loop do
-        stat_reported = false
-
-        # Loop reading until there's nothing more to read
-        loop do
-          # Limit reads to prevent loading entire file into memory if not seeking to end
-          part = f.read_nonblock(TAIL_BLOCK_SIZE) rescue nil
-          stat = f.stat
-          if part
-            current_size = stat.size
-            if part =~ /\A\0+\Z/
-              # Skip past blobs of NUL bytes in corrupted log files.  This happens
-              # sometimes, probably due to bad log rotation.
-              next
-            end
-            lines += part
-          elsif stat.ino != current_inode || stat.dev != current_dev ||
-            stat.size < current_size
-            # File rotated/truncated, reopen
-            f = open(file)
-            stat = File.stat(file)
-            current_inode, current_dev = stat.ino, stat.dev
-          else
-            # nothing more to read: break and sleep
-            break
-          end
-
-          if lines.include?("\n")
-            # If there isn't a null trailing field, last string isn't newline terminated
-            split = lines.split("\n", TAIL_BLOCK_SIZE)
-            if split[-1] == ""
-              # Remove null trailing field
-              split.pop
-              lines = "" # reset lines
-            else
-              # Save partial line for next round
-              lines = split.pop
-            end
-
-            split.each do |line|
-              ingest(line)
-              stat_reported = true
-            end
-          end
-
-          # If no stat was reported through this loop, then report zeros as
-          # sentinels.
-          if !stat_reported
-            ALL_MEASUREMENTS.each { |m| report(m, 0) }
-          end
-        end
-
-        sleep @tail_sleep_secs
+    def tail
+      Tailer.new(@filename, @tail_sleep_secs, @tail).tail do |line|
+        ingest(line)
+        stat_reported = true
       end
     end
 
