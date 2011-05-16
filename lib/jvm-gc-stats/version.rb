@@ -1,7 +1,3 @@
-module Jvm
-  module Gc
-    module Stats
-      VERSION = "0.0.1"
-    end
-  end
+module JvmGcStats
+  VERSION = "0.0.1"
 end

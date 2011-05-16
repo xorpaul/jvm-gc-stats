@@ -4,7 +4,7 @@ require "jvm-gc-stats/version"
 
 Gem::Specification.new do |s|
   s.name        = "jvm-gc-stats"
-  s.version     = Jvm::Gc::Stats::VERSION
+  s.version     = JvmGcStats::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["TODO: Write your name"]
   s.email       = ["TODO: Write your email address"]
