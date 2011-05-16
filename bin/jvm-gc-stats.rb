@@ -69,71 +69,106 @@ class JvmGcStats
   end
 
 
-
+  # Inserts metrics with the name and value into the reporting system
+  # By default, this is ganglia via gmetric. This is the method to
+  # override if you want your own reporting.
   def report(name, value, units="items")
     key = "#{@prefix}jvm.gc.#{name}"
 
     if @report
       system("gmetric -t float -n \"#{key}\" -v \"#{value}\" -u \"#{units}\" -d #{@report_timeout}")
-    else
+    end
+
+    if @debug
       puts "#{key}=#{value} #{units}"
     end
   end
 
+  # Returns a File object in read-mode for a given file. defaults to @filename
+  def open_file(file=@filename)
+    File.new(file, "r")
+  end
 
   TAIL_BLOCK_SIZE = 2048
   ALL_MEASUREMENTS = %w[promoFail.realSec major.concur.userSec major.concur.realSec major.block.userSec] +
                      %w[%s.survivalRatio %s.kbytesPerSec %s.userSec %s.realSec].collect{|m| %w[minor full].collect{|s| m % s}}.flatten
 
-  def open_file(file=@filename)
-    File.new(file, "r")
-  end
-
+  # Read a file, optionally just the tail of the file (based on the @tail variable)
+  # and for each logline, report it's stats.
   def tail(file=@filename)
+    # There are 4 scenarios this code has to handle
+    #  empty read
+    #  partial read (no full record)
+    #  full record (ending on a \n)
+    #  full record with partial record
     f = open_file(file)
     f.seek(0, IO::SEEK_END) if @tail
-    current_inode = f.stat.ino
+    stat = f.stat
+    current_inode, current_dev, current_size = stat.ino, stat.dev, stat.size
     lines = ""
 
+    # Loop forever, reading every @tail_sleep_secs
     loop do
-      begin
+      stat_reported = false
+
+      # Loop reading until there's nothing more to read
+      loop do
         # Limit reads to prevent loading entire file into memory if not seeking to end
         part = f.read_nonblock(TAIL_BLOCK_SIZE) rescue nil
-
-        if part == nil
-          # End of file reached, wait for more data.
-          # Also report all the metrics as zero as a sentinel to your reporting system.
-          ALL_MEASUREMENTS.each{|m| report(m, 0)}
-          sleep @tail_sleep_secs
-
-          f = open(file) unless File.stat(file).ino == current_inode
-          current_inode = f.stat.ino
-        else
+        stat = f.stat
+        if part
+          current_size = stat.size
+          if part =~ /\A\0+\Z/
+            # Skip past blobs of NUL bytes in corrupted log files.  This happens
+            # sometimes, probably due to bad log rotation.
+            next
+          end
           lines += part
+        elsif stat.ino != current_inode || stat.dev != current_dev ||
+          stat.size < current_size
+          # File rotated/truncated, reopen
+          f = open(file)
+          stat = File.stat(file)
+          current_inode, current_dev = stat.ino, stat.dev
+        else
+          # nothing more to read: break and sleep
+          break
         end
-      end until lines.include?("\n")
 
-      # If there isn't a null trailing field, last string isn't newline terminated
-      split = lines.split("\n", TAIL_BLOCK_SIZE)
+        if lines.include?("\n")
+          # If there isn't a null trailing field, last string isn't newline terminated
+          split = lines.split("\n", TAIL_BLOCK_SIZE)
+          if split[-1] == ""
+            # Remove null trailing field
+            split.pop
+            lines = "" # reset lines
+          else
+            # Save partial line for next round
+            lines = split.pop
+          end
 
-      if split[-1] == ""
-        # Remove null trailing field
-        split.pop
-        lines = "" # reset lines
-      else
-        # Save partial line for next round
-        lines = split.pop
+          split.each do |line|
+            ingest(line)
+            stat_reported = true
+          end
+        end
+
+        # If no stat was reported through this loop, then report zeros as
+        # sentinels.
+        if !stat_reported
+          ALL_MEASUREMENTS.each { |m| report(m, 0) }
+        end
       end
 
-      split.each do |line|
-        ingest(line)
-      end
+      sleep @tail_sleep_secs
     end
   end
 
-  USER_REAL         = '.*?user=(\d+.\d+).*?real=(\d+.\d+)'
+  USER_REAL        = '.*?user=(\d+.\d+).*?real=(\d+.\d+)'
+  MINOR_PAR        = Regexp.new('PSYoungGen: (\d+)K->(\d+)' + USER_REAL)
   MINOR            = Regexp.new('ParNew: (\d+)K->(\d+)' + USER_REAL)
   FULL             = Regexp.new('Full GC \[CMS: (\d+)K->(\d+)' + USER_REAL)
+  FULL_PAR         = Regexp.new('Full GC \[PSYoungGen: (\d+)K->(\d+)' + USER_REAL)
   PROMOTION_FAILED = Regexp.new('promotion failed' + USER_REAL)
   SCAVANGE         = Regexp.new('Trying a full collection because scavenge failed')
   CMS_START        = Regexp.new('\[CMS-concurrent.*start\]')
@@ -169,12 +204,17 @@ class JvmGcStats
     report("#{collection}.realSec", realSec)
   end
 
+  # Parses a GC logline and report the metrics it contains.
   def ingest(str)
     case str
-    when MINOR
-      minorAndFull($~, "minor", str)
     when FULL
       minorAndFull($~, "full", str)
+    when FULL_PAR
+      minorAndFull($~, "full", str)
+    when MINOR
+      minorAndFull($~, "minor", str)
+    when MINOR_PAR
+      minorAndFull($~, "minor", str)
     when PROMOTION_FAILED
       userSec = $~[1].to_f
       realSec = $~[2].to_f
@@ -200,7 +240,7 @@ class JvmGcStats
     when SCAVANGE
       puts "ignore scavange #{str}" if @debug
     else
-      puts "UNMATCHED #{str}"
+      puts "UNMATCHED #{str}" if @debug
     end
   end
 end
