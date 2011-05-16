@@ -1,3 +1,9 @@
+#!/usr/bin/env ruby
+
+require 'getoptlong'
+$: << 'lib'
+require 'jvm-gc-stats'
+
 def usage
   puts "jvm-gc-stats.rb: Tails a jvm logfile and reports its entries "
   puts
@@ -23,7 +29,7 @@ opts = GetoptLong.new(
   [ '-w', GetoptLong::OPTIONAL_ARGUMENT ]
 )
 
-filename        = "stdout"
+filename        = nil
 report          = true
 prefix          = ''
 report_timeout  = 86400
@@ -40,19 +46,19 @@ opts.each do |opt, arg|
     usage
     exit 0
   when '-n'
-    @report = false
+    report = false
   when '-P'
-    @prefix = arg
+    prefix = arg
   when '-f'
-    @filename = arg
+    filename = arg
   when '-s'
-    @tail_sleep_secs = arg.to_i
+    tail_sleep_secs = arg.to_i
   when '-d'
-    @debug = true
+    debug = true
   when '-w'
-    @tail = false
+    tail = false
   end
 end
 
-stats = JvmGcStats.new(filename, report, prefix, report_timeout, tail_sleep_secs, tail, debug)
+stats = JvmGcStats::JvmGcStats.new(filename, report, prefix, report_timeout, tail_sleep_secs, tail, debug)
 stats.tail
