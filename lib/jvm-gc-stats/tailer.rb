@@ -1,14 +1,15 @@
+require 'strscan'
+
 module JvmGcStats
   class Tailer
     TAIL_BLOCK_SIZE = 2048
 
-    def initialize(filename, tail_sleep_secs, tail)
+    def initialize(filename, tail_sleep_secs=60, tail=true)
       @filename = filename
       @tail_sleep_secs = tail_sleep_secs
       @tail = tail
     end
 
-    # Returns a File object in read-mode for a given file. defaults to @filename
     def open_file(file=@filename)
       File.new(file, "r")
     end
@@ -25,25 +26,25 @@ module JvmGcStats
       f.seek(0, IO::SEEK_END) if @tail
       stat = f.stat
       current_inode, current_dev, current_size = stat.ino, stat.dev, stat.size
-      lines = ""
+      buffer = ""
 
       # Loop forever, reading every @tail_sleep_secs
       loop do
         # Loop reading until there's nothing more to read
         loop do
           # Limit reads to prevent loading entire file into memory if not seeking to end
-          part = f.read_nonblock(TAIL_BLOCK_SIZE) rescue nil
+          block = begin
+            f.read_nonblock(TAIL_BLOCK_SIZE) 
+          rescue =>e
+            p e
+            nil
+          end
           stat = f.stat
-          if part
+          if block
             current_size = stat.size
-            if part =~ /\A\0+\Z/
-              # Skip past blobs of NUL bytes in corrupted log files.  This happens
-              # sometimes, probably due to bad log rotation.
-              next
-            end
-            lines += part
+            buffer += block
           elsif stat.ino != current_inode || stat.dev != current_dev ||
-            stat.size < current_size
+                stat.size < current_size
             # File rotated/truncated, reopen
             f = open(file)
             stat = File.stat(file)
@@ -53,22 +54,11 @@ module JvmGcStats
             break
           end
 
-          if lines.include?("\n")
-            # If there isn't a null trailing field, last string isn't newline terminated
-            split = lines.split("\n", TAIL_BLOCK_SIZE)
-            if split[-1] == ""
-              # Remove null trailing field
-              split.pop
-              lines = "" # reset lines
-            else
-              # Save partial line for next round
-              lines = split.pop
-            end
-
-            split.each do |line|
-              yield line
-            end
+          scanner = StringScanner.new(buffer)
+          while line = scanner.scan_until(/\n/)
+            yield line
           end
+          buffer = scanner.rest
         end
 
         sleep @tail_sleep_secs
