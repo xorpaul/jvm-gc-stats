@@ -6,12 +6,10 @@ module JvmGcStats
   # instantiate it. You may also extend it if that's your jam.
   #
   class JvmGcStats
-    def initialize(filename, report, prefix, report_timeout, tail_sleep_secs, tail, debug)
+    def initialize(filename, report, prefix, tail, debug)
       @filename = filename
       @report = report
       @prefix = prefix
-      @report_timeout = report_timeout
-      @tail_sleep_secs = tail_sleep_secs
       @debug = debug
       @tail = tail
     end
@@ -23,7 +21,7 @@ module JvmGcStats
       key = "#{@prefix}jvm.gc.#{name}"
 
       if @report
-        system("gmetric -t float -n \"#{key}\" -v \"#{value}\" -u \"#{units}\" -d #{@report_timeout}")
+        system("gmetric -t float -n \"#{key}\" -v \"#{value}\" -u \"#{units}\"")
       end
 
       if @debug
@@ -32,7 +30,7 @@ module JvmGcStats
     end
 
     def run
-      Tailer.new(@filename, @tail_sleep_secs, @tail).tail do |line|
+      Tailer.new(@filename, @tail).tail do |line|
         ingest(line)
         stat_reported = true
       end

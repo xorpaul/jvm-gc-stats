@@ -4,9 +4,8 @@ module JvmGcStats
   class Tailer
     TAIL_BLOCK_SIZE = 2048
 
-    def initialize(filename, tail_sleep_secs=60, tail=true)
+    def initialize(filename, tail=true)
       @filename = filename
-      @tail_sleep_secs = tail_sleep_secs
       @tail = tail
     end
 
@@ -61,7 +60,7 @@ module JvmGcStats
           buffer = scanner.rest
         end
 
-        sleep @tail_sleep_secs
+        sleep 10
       end
     end
   end

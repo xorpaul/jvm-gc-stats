@@ -12,7 +12,7 @@ def usage
   puts "    -n              say what I would report, but don't report it"
   puts "    -P <prefix>     optional prefix for ganglia names"
   puts "    -f <file>       gc logfile to use. defaults to a file named stdout"
-g  puts "    -d              turn on verbose debug output"
+  puts "    -d              turn on verbose debug output"
   puts "    -w              read the whole file from the beginning rather than tail"
   puts
 end
@@ -31,8 +31,6 @@ opts = GetoptLong.new(
 filename        = nil
 report          = true
 prefix          = ''
-report_timeout  = 86400
-tail_sleep_secs = 60
 tail            = true
 debug           = false
 
@@ -50,8 +48,6 @@ opts.each do |opt, arg|
     prefix = arg
   when '-f'
     filename = arg
-  when '-s'
-    tail_sleep_secs = arg.to_i
   when '-d'
     debug = true
   when '-w'
@@ -59,5 +55,5 @@ opts.each do |opt, arg|
   end
 end
 
-stats = JvmGcStats::JvmGcStats.new(filename, report, prefix, report_timeout, tail_sleep_secs, tail, debug)
+stats = JvmGcStats::JvmGcStats.new(filename, report, prefix, tail, debug)
 stats.run
