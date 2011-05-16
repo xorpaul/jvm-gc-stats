@@ -31,10 +31,7 @@ module JvmGcStats
       end
     end
 
-    ALL_MEASUREMENTS = %w[promoFail.realSec major.concur.userSec major.concur.realSec major.block.userSec] +
-                       %w[%s.survivalRatio %s.kbytesPerSec %s.userSec %s.realSec].collect{|m| %w[minor full].collect{|s| m % s}}.flatten
-
-    def tail
+    def run
       Tailer.new(@filename, @tail_sleep_secs, @tail).tail do |line|
         ingest(line)
         stat_reported = true

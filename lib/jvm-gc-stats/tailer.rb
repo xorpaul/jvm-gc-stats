@@ -34,9 +34,9 @@ module JvmGcStats
         loop do
           # Limit reads to prevent loading entire file into memory if not seeking to end
           block = begin
-            f.read_nonblock(TAIL_BLOCK_SIZE) 
-          rescue =>e
-            p e
+            f.read_nonblock(TAIL_BLOCK_SIZE)
+          rescue => e
+            #EOF
             nil
           end
           stat = f.stat
