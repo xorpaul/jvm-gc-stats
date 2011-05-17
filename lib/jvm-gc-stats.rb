@@ -12,21 +12,7 @@ module JvmGcStats
       @prefix = prefix
       @debug = debug
       @tail = tail
-    end
-
-    # Inserts metrics with the name and value into the reporting system
-    # By default, this is ganglia via gmetric. This is the method to
-    # override if you want your own reporting.
-    def report(name, value, units="items")
-      key = "#{@prefix}jvm.gc.#{name}"
-
-      if @report
-        system("gmetric -t float -n \"#{key}\" -v \"#{value}\" -u \"#{units}\"")
-      end
-
-      if @debug
-        puts "#{key}=#{value} #{units}"
-      end
+      @reporter = Reporter.new(@report, @debug)
     end
 
     def run
@@ -70,10 +56,10 @@ module JvmGcStats
                collection, userSec, realSec, ratio, kPerUserSec, kPerRealSec)
       end
 
-      report("#{collection}.survivalRatio", ratio)
-      report("#{collection}.kbytesPerSec", kPerRealSec)
-      report("#{collection}.userSec", userSec)
-      report("#{collection}.realSec", realSec)
+      @reporter.report("#{collection}.survivalRatio", ratio)
+      @reporter.report("#{collection}.kbytesPerSec", kPerRealSec)
+      @reporter.report("#{collection}.userSec", userSec)
+      @reporter.report("#{collection}.realSec", realSec)
     end
 
     # Parses a GC logline and report the metrics it contains.
@@ -92,19 +78,19 @@ module JvmGcStats
         realSec = $~[2].to_f
         printf "%-15s user %5.2f real %5.2f\n", "promoFail", userSec, realSec if @debug
         # Reporting userSec for promotion failures is redundant
-        report("promoFail.realSec", realSec)
+        @reporter.report("promoFail.realSec", realSec)
       when CMS_CONCURRENT
         userSec = $~[1].to_f
         realSec = $~[2].to_f
         printf "%-15s user %5.2f real %5.2f\n", "major concur", userSec, realSec if @debug
-        report("major.concur.userSec", userSec)
-        report("major.concur.realSec", realSec)
+        @reporter.report("major.concur.userSec", userSec)
+        @reporter.report("major.concur.realSec", realSec)
       when CMS_BLOCK
         userSec = $~[2].to_f
         realSec = $~[3].to_f
         printf "%-15s user %5.2f real %5.2f\n", "major block", userSec, realSec if @debug
-        report("major.block.userSec", userSec)
-        report("major.block.realSec", realSec)
+        @reporter.report("major.block.userSec", userSec)
+        @reporter.report("major.block.realSec", realSec)
       when CMS_START
         puts "ignore cms start #{str}" if @debug
       when STARTUP
@@ -113,6 +99,28 @@ module JvmGcStats
         puts "ignore scavange #{str}" if @debug
       else
         puts "UNMATCHED #{str}" if @debug
+      end
+    end
+  end
+
+  class Reporter
+    def initialize(report, debug)
+      @report = report
+      @debug = debug
+    end
+
+    # Inserts metrics with the name and value into the reporting system
+    # By default, this is ganglia via gmetric. This is the method to
+    # override if you want your own reporting.
+    def report(name, value, units="items")
+      key = "#{@prefix}jvm.gc.#{name}"
+
+      if @report
+        system("gmetric -t float -n \"#{key}\" -v \"#{value}\" -u \"#{units}\"")
+      end
+
+      if @debug
+        puts "#{key}=#{value} #{units}"
       end
     end
   end
