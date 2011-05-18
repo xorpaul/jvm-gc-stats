@@ -24,32 +24,14 @@ module JvmGcStats
           :sys_time  => m[3].to_f,
           :real_time => m[4].to_f
         }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-mark: \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
+      when /(.*): \d+\.\d+: \[(CMS-concurrent-abortable-preclean|CMS-concurrent-preclean|CMS-concurrent-mark): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
         m = $~
         {
-          :type => "CMS-concurrent-mark",
           :timestamp => m[1],
-          :user_time => m[2].to_f,
-          :sys_time => m[3].to_f,
-          :real_time => m[4].to_f
-        }
-      when /(.*): \d+\.\d+: \[CMS\-concurrent\-preclean: \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-preclean",
-          :timestamp => m[1],
-          :user_time => m[2].to_f,
-          :sys_time  => m[3].to_f,
-          :real_time => m[4].to_f
-        }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-abortable-preclean: \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-abortable-preclean",
-          :timestamp => m[1],
-          :user_time => m[2].to_f,
-          :sys_time => m[3].to_f,
-          :real_time => m[4].to_f
+          :type => m[2],
+          :user_time => m[3].to_f,
+          :sys_time => m[4].to_f,
+          :real_time => m[5].to_f
         }
       when /(.*): \d+\.\d+: \[Full GC \d+\.\d+: \[CMS: (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
         m = $~
@@ -67,22 +49,10 @@ module JvmGcStats
           :sys_time => m[9].to_f,
           :real_time => m[10].to_f
         }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-mark-start\]/
+      when /(.*): \d+\.\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]/
         m = $~
         {
-          :type => "CMS-concurrent-mark-start",
-          :timestamp => m[1]
-        }
-      when /(.*): \d+.\d+: \[CMS-concurrent-preclean-start\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-preclean-start",
-          :timestamp => m[1]
-        }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-abortable-preclean-start\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-abortable-preclean-start",
+          :type => m[2],
           :timestamp => m[1]
         }
       when /(.*): \d+\.\d+: \[GC\[YG occupancy: \d+ K \(\d+ K\)\]\d+\.\d+: \[Rescan \(parallel\) , \d+\.\d+ secs\]\d+\.\d+: \[weak refs processing, \d+\.\d+ secs\] \[1 CMS-remark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
@@ -94,28 +64,7 @@ module JvmGcStats
           :sys_time  => m[3].to_f,
           :real_time => m[4].to_f
         }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-sweep-start\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-sweep-start",
-          :timestamp => m[1]
-        }
-      when /(.*): \d+\.\d+: \[CMS-concurrent-sweep: \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
-        m = $~
-        {
-          :type => "CMS-concurrent-sweep",
-          :timestamp => m[1],
-          :user_time => m[2].to_f,
-          :sys_time  => m[3].to_f,
-          :real_time => m[4].to_f
-        }
-      when /(.*): \d+.\d+: \[(CMS-concurrent-reset-start)\]/
-        m = $~
-        {
-          :timestamp => m[1],
-          :type => m[2]
-        }
-      when /(.*): \d+\.\d+: \[(CMS-concurrent-reset): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
+      when /(.*): \d+\.\d+: \[(CMS-concurrent-reset|CMS-concurrent-sweep): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
         m = $~
         {
           :timestamp => m[1],
