@@ -55,5 +55,5 @@ opts.each do |opt, arg|
   end
 end
 
-stats = JvmGcStats::JvmGcStats.new(filename, report, prefix, tail, debug)
+stats = JvmGcStats::StatsCollector.new(filename, report, prefix, tail, debug)
 stats.run
