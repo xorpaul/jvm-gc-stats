@@ -4,6 +4,8 @@ require 'jvm-gc-stats/parser'
 
 include JvmGcStats
 
+# TODO newgen -> younggen
+
 class TestParser < Test::Unit::TestCase
 
   def TODO_test_promotion_failure
@@ -68,22 +70,41 @@ class TestParser < Test::Unit::TestCase
   end
 
   def test_full
-  line = "2011-05-16T19:01:49.148+0000: 6.888: [Full GC 6.906: [CMS: 22065K->39440K(7340032K), 0.3012410 secs] 240184K->39440K(8283776K), [CMS Perm : 35150K->35025K(35236K)], 0.3014270 secs] [Times: user=0.30 sys=0.01, real=0.32 secs]"
-    data = {
-      :type            => "Full",
-      :user_time       => 0.30,
-      :sys_time        => 0.01,
-      :real_time       => 0.32,
-      :timestamp       => "2011-05-16T19:01:49.148+0000",
-      :total_kb_before => 240184,
-      :total_kb_after  => 39440,
-      :blocking        => true,
-      :permgen_kb_before => 35150,
-      :permgen_kb_after => 35025,
-      :oldgen_kb_before => 22065,
-      :oldgen_kb_after => 39440
-    }
-    assert_each(data, Parser.parse(line))
+    assert_parsed(
+      "2011-05-16T19:01:49.148+0000: 6.888: [Full GC 6.906: [CMS: 22065K->39440K(7340032K), 0.3012410 secs] 240184K->39440K(8283776K), [CMS Perm : 35150K->35025K(35236K)], 0.3014270 secs] [Times: user=0.30 sys=0.01, real=0.32 secs]",
+      data = {
+        :type            => "Full",
+        :user_time       => 0.30,
+        :sys_time        => 0.01,
+        :real_time       => 0.32,
+        :timestamp       => "2011-05-16T19:01:49.148+0000",
+        :total_kb_before => 240184,
+        :total_kb_after  => 39440,
+        :blocking        => true,
+        :permgen_kb_before => 35150,
+        :permgen_kb_after => 35025,
+        :oldgen_kb_before => 22065,
+        :oldgen_kb_after => 39440
+      }
+    )
+    assert_parsed(
+      "2011-05-11T04:28:36.398+0000: 257.070: [Full GC [PSYoungGen: 3936K->0K(85760K)] [ParOldGen: 252218K->120734K(221056K)] 256154K->120734K(306816K) [PSPermGen: 12177K->12153K(24896K)], 0.3264320 secs] [Times: user=2.75 sys=0.21, real=0.33 secs]",
+      {
+        :type => "Full",
+        :timestamp => "2011-05-11T04:28:36.398+0000",
+        :newgen_kb_before => 3936,
+        :newgen_kb_after => 0,
+        :oldgen_kb_before => 252218,
+        :oldgen_kb_after => 120734,
+        :total_kb_before => 256154,
+        :total_kb_after => 120734,
+        :permgen_kb_before => 12177,
+        :permgen_kb_after => 12153,
+        :user_time => 2.75,
+        :sys_time => 0.21,
+        :real_time => 0.33,
+      }
+    )
   end
 
   def test_cms_initial_mark
