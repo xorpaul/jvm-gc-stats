@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+$: << 'lib'
+require 'jvm-gc-stats/parser'
+
+while line = $stdin.gets
+  line = line.strip
+  p JvmGcStats::Parser.parse(line)
+end
