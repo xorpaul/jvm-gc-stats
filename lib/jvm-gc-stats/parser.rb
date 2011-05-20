@@ -92,6 +92,19 @@ module JvmGcStats
         }
       when /Heap/, /\w*(par|eden|from|to|concurrent)/
         {:ignore => true}
+      when /(.*): \d+\.\d+: \[GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
+        m = $~
+        {
+          :type             => 'PSYoungGen',
+          :timestamp        => m[1],
+          :newgen_kb_before => m[2].to_i,
+          :newgen_kb_after  => m[3].to_i,
+          :total_kb_before  => m[4].to_i,
+          :total_kb_after   => m[5].to_i,
+          :user_time        => m[6].to_f,
+          :sys_time         => m[7].to_f,
+          :real_time        => m[8].to_f,
+        }
       else
         raise "couldn't parse #{line}"
       end

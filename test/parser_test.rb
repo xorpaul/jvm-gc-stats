@@ -356,4 +356,27 @@ class TestParser < Test::Unit::TestCase
       )
     end
   end
+
+  def test_kestrel
+    assert_parsed(
+      "2011-05-11T04:24:20.339+0000: 1.012: [GC [PSYoungGen: 96640K->640K(112704K)] 96640K->640K(370368K), 0.0123710 secs] [Times: user=0.07 sys=0.00, real=0.02 secs]",
+      {
+        :timestamp => "2011-05-11T04:24:20.339+0000",
+        :type => "PSYoungGen",
+        :newgen_kb_before => 96640,
+        :newgen_kb_after => 640,
+        :total_kb_before => 96640,
+        :total_kb_after => 640,
+        :user_time => 0.07,
+        :sys_time => 0.0,
+        :real_time => 0.02
+      }
+    )
+  end
+
+  def TODO_test_with_tenuring_distribution
+    # 2011-05-13T01:14:09.835+0000: 0.920: [GC
+    #   Desired survivor size 49545216 bytes, new threshold 7 (max 15)
+    #   [PSYoungGen: 290560K->25022K(338944K)] 290560K->25022K(1113728K), 0.0237240 secs] [Times: user=0.13 sys=0.13, real=0.03 secs]
+  end
 end
