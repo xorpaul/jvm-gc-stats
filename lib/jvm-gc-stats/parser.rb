@@ -105,7 +105,7 @@ module JvmGcStats
           :sys_time         => m[7].to_f,
           :real_time        => m[8].to_f,
         }
-      when /(.*): \d+\.\d+: \[Full GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)] \[ParOldGen: (\d+)K->(\d+)K\(\d+K\)] (\d+)K->(\d+)K\(\d+K\) \[PSPermGen: (\d+)K->(\d+)K\(\d+K\)], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
+      when /(.*): \d+\.\d+: \[Full GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] \[ParOldGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\) \[PSPermGen: (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]/
         m = $~
         {
           :type => "Full",
