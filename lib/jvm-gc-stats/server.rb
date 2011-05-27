@@ -24,6 +24,7 @@ module JvmGcStats
             rescue => e
               p e
               puts e.backtrace.join("\n")
+              @data[:errors] += 1
             end
           end
         end
@@ -31,7 +32,9 @@ module JvmGcStats
     end
 
     def new_data
-      Hash.new {|h1, k1| h1[k1] = Hash.new {|h2, k2| h2[k2] = Hash.new {|h3, k3| h3[k3] = 0}}}
+      h = Hash.new {|h1, k1| h1[k1] = Hash.new {|h2, k2| h2[k2] = Hash.new {|h3, k3| h3[k3] = 0}}}
+      h[:errors] = 0
+      h
     end
 
     def call(env)
