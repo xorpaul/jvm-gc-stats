@@ -15,6 +15,7 @@ module JvmGcStats
 
       @mutex = Mutex.new
 
+      Thread.abort_on_exception = true
       @tailer_threads = []
       @tailers.each_pair do |k,v|
         @tailer_threads << Thread.new do
