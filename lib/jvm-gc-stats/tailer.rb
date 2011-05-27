@@ -45,7 +45,7 @@ module JvmGcStats
                 stat.size < current_size
             # File rotated/truncated, reopen
             f = open(file)
-            stat = File.stat(file)
+            stat = File.stat(@filename)
             current_inode, current_dev = stat.ino, stat.dev
           else
             # nothing more to read: break and sleep
