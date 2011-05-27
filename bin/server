@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'rack'
+$: << File.dirname(File.dirname(__FILE__)) + '/lib'
+require 'jvm-gc-stats/server'
+
+app = Rack::Builder.new {
+  use Rack::CommonLogger 
+  use Rack::ShowExceptions
+  map "/" do
+    use Rack::Lint
+    run JvmGcStats::Server.new({ARGV[0] => ARGV[1]})
+  end
+}
+
+Rack::Handler::Mongrel.run(app, :Port => 3000)
