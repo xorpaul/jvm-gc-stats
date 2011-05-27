@@ -69,4 +69,4 @@ app = Rack::Builder.new {
   end
 }
 
-Rack::Handler::Mongrel.run(app, :Port => 3000)
+Rack::Handler::Mongrel.run(app, :Port => port)
