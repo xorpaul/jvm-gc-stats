@@ -44,7 +44,7 @@ module JvmGcStats
           elsif stat.ino != current_inode || stat.dev != current_dev ||
                 stat.size < current_size
             # File rotated/truncated, reopen
-            f = open(file)
+            f = open(@filename)
             stat = File.stat(@filename)
             current_inode, current_dev = stat.ino, stat.dev
           else
