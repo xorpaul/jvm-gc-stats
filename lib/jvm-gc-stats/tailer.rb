@@ -27,7 +27,6 @@ module JvmGcStats
       current_inode, current_dev, current_size = stat.ino, stat.dev, stat.size
       buffer = ""
 
-      # Loop forever, reading every @tail_sleep_secs
       loop do
         # Loop reading until there's nothing more to read
         loop do
@@ -60,7 +59,7 @@ module JvmGcStats
           buffer = scanner.rest
         end
 
-        sleep 10
+        sleep 1
       end
     end
   end
