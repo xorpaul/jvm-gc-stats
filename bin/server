@@ -1,16 +1,71 @@
 #!/usr/bin/env ruby
 
+# == Synopsis
+#
+# server: tails JVM gc logs and reports via http+json
+#
+# == Usage
+#
+# server [--help|--config file]
+#
+# -h, --help:
+#    show help
+#
+# --config f:
+#    use f as a config file (a YAML hash of service name => path to gc log)
+#
+# == Config file format
+#
+# YAML of  the form
+#
+#   port: 5000
+#   services:
+#     cassandra: /var/log/cassandra/gc.log
+#     snowflake: /var/log/snowflake/gc.log
+
+
+require 'getoptlong'
 require 'rubygems'
 require 'rack'
+require 'rdoc/usage'
+
 $: << File.dirname(File.dirname(__FILE__)) + '/lib'
 require 'jvm-gc-stats/server'
 
+opts = GetoptLong.new(
+  ['--config', GetoptLong::REQUIRED_ARGUMENT],
+  ['--help', '-h', GetoptLong::NO_ARGUMENT]
+)
+
+config_file = nil
+opts.each do |opt, arg|
+  case opt
+  when '--help', '-h'
+    RdDoc::usage
+    exit
+  when '--config'
+    config_file = arg
+  end
+end
+
+unless config_file
+  RDoc::usage
+  exit
+end
+
+config = YAML.parse_file(config_file)
+port = config.value['port'] || 5000
+services = {}
+config['services'].value.each_pair do |k,v|
+  services[k.value] = v.value
+end
+
 app = Rack::Builder.new {
-  use Rack::CommonLogger 
+  use Rack::CommonLogger
   use Rack::ShowExceptions
   map "/" do
     use Rack::Lint
-    run JvmGcStats::Server.new({ARGV[0] => ARGV[1]})
+    run JvmGcStats::Server.new(services)
   end
 }
 
