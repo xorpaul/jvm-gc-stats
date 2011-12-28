@@ -34,6 +34,9 @@ def main():
 
     parser.add_option('-f', '--logfile', dest='logfile',
                     help='GC logfile you want to follow and parse')
+    parser.add_option('-d', '--debug', dest='debug', action='store_true',
+                    default=False, help='print additional debug information')
+
 
     # Auslesen und Parsen der Argumente
     (options, args) = parser.parse_args()
@@ -42,9 +45,7 @@ def main():
     # Making sure all mandatory options appeared.
     mandatories = {'logfile': 'f'}
 
-    logfile = "/media/down@ppd/gc.log"
-
-    s = Server(8000)
+    s = Server.Server(8002)
     s.serve()
 if __name__ == '__main__' or __name__ == sys.argv[0]:
     sys.exit(main())    # call main subroutine

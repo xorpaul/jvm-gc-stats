@@ -48,10 +48,10 @@ def main():
                     mandatories[m], m))
             sys.exit(1)
 
-    logfile = "/media/down@ppd/gc.log"
-    t = Tailer(logfile)
+    logfile = "/var/log/tc7_test/gc.log"
+    t = Tailer.Tailer(logfile)
 
-    p = Parser()
+    p = Parser.Parser()
     try:
         p.parse(t)
     except KeyboardInterrupt:
