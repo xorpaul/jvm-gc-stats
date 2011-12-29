@@ -34,6 +34,8 @@ def main():
 
     parser.add_option('-f', '--logfile', dest='logfile',
                     help='GC logfile you want to follow and parse')
+    parser.add_option('-p', '--port', dest='port', default='5000', type='int',
+                    help='port at which the HTTP server will run')
 
     # Auslesen und Parsen der Argumente
     (options, args) = parser.parse_args()
@@ -48,12 +50,13 @@ def main():
                     mandatories[m], m))
             sys.exit(1)
 
-    logfile = "/var/log/tc7_test/gc.log"
-    t = Tailer.Tailer(logfile)
-
+    #logfile = "/var/log/tc7_test/gc.log"
+    t = Tailer.Tailer(options.logfile)
     p = Parser.Parser()
+    s = Server.Server(options.port, p, t)
+
     try:
-        p.parse(t)
+        s.serve()
     except KeyboardInterrupt:
         print "exiting..."
     except:
