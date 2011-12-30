@@ -30,17 +30,15 @@ def main():
 
     usage = 'usage: %prog [options]'
     parser = OptionParser(usage, version="%prog 0.9",
-                                description=desc, epilog=epilog)
+                                description=desc)
 
     parser.add_option('-f', '--logfile', dest='logfile',
                     help='GC logfile you want to follow and parse')
     parser.add_option('-p', '--port', dest='port', default='5000', type='int',
                     help='port at which the HTTP server will run')
 
-    # Auslesen und Parsen der Argumente
     (options, args) = parser.parse_args()
 
-    # Abfangen von zuwenig Parametern
     # Making sure all mandatory options appeared.
     mandatories = {'logfile': 'f'}
 
@@ -57,11 +55,12 @@ def main():
 
     try:
         s.serve()
-    except KeyboardInterrupt:
-        print "exiting..."
-    except:
-        print "Unexpected error:", sys.exc_info()[0]
-        raise
+    except (KeyboardInterrupt, SystemExit):
+        print "exiting main..."
+        sys.excepthook(*sys.exc_info())
+
+    return 0
+
 
 if __name__ == '__main__' or __name__ == sys.argv[0]:
     sys.exit(main())    # call main subroutine

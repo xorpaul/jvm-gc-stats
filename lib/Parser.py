@@ -1,29 +1,41 @@
 import re
-import json
 import copy
+import signal
+import thread
 from string import maketrans
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 import Tailer
 
-def singleton(cls):
-    instances = {}
-    def getinstance():
-        if cls not in instances:
-            instances[cls] = cls()
-        return instances[cls]
-    return getinstance
+class Parser(object):
+    # Singleton pattern
+    # http://stackoverflow.com/a/1810367/682847
+    __lockObj = thread.allocate_lock()  # lock object
+    __instance = None  # the unique instance
+    __init = None  # the unique instance
+    def __new__(cls, *args, **kwargs):
+        #print "ID Parser obj:", id(cls), "- Parser new"
+        if not cls.__instance:
+            cls.__instance = super(Parser, cls).__new__(
+                                cls, *args, **kwargs)
+        return cls.__instance
 
-@singleton
-class Parser:
     def __init__(self):
         #print "ID Parser obj:", id(self), "- Parser init"
-        self.datum = {}
-        # http://stackoverflow.com/a/39858/682847
-        # Needed to set default values for dictionary, 
-        # otherwise I would get KeyErrors when trying to 
-        # sum up numbers in getMetrics
-        self.data = DefaultDict(DefaultDict(0.0), **DefaultDict(0.0))
-        self.data['error']['count'] = 0
+        if not self.__init:
+            self.datum = {}
+            # http://stackoverflow.com/a/39858/682847
+            # Needed to set default values for dictionary, 
+            # otherwise I would get KeyErrors when trying to 
+            # sum up numbers in getMetrics
+            self.data = DefaultDict(DefaultDict(0.0), **DefaultDict(0.0))
+            self.data['error']['count'] = 0
+            self.__init = True
+
+        return
 
     def parse(self, t):
         #string = "2011-12-02T22:54:14.955+0100: 39.331: [GC 39.331: [ParNew: 57344K->7619K(57344K), 0.4781460 secs] 63799K->21896K(516096K), 0.4905760 secs] [Times: user=0.38 sys=0.00, real=0.49 secs]"
@@ -139,8 +151,11 @@ class Parser:
                 print Exception("couldn't parse line: %s" % line)
                 self.data['error']['count'] += 1
 
+            print self.datum
             # we are still in the for line in lines loop!
             if self.datum:      # check if a regex did match
+                # Critical section start
+                self.__lockObj.acquire()
                 type = self.underscore(self.datum['type'])
                 if type == 'par_new':
                     self.data[type]['real_time'] += self.datum['real_time']
@@ -166,11 +181,15 @@ class Parser:
                     self.data[type]['sys_time'] += self.datum['sys_time']
                     self.data[type]['user_time'] += self.datum['user_time']
 
+            #  Exit from critical section
+            self.__lockObj.release()
+            # Critical section end
         return
 
     def getMetrics(self):
         #print "ID Parser obj:", id(self), "- getMetrics method call"
         #print "ID datum:", id(self.datum), "- getMetrics method call"
+        #print "data getMetrics:", self.data, id(self.data)
         return json.dumps(self.data)
 
     def clearDatum(self):

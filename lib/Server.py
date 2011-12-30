@@ -12,6 +12,7 @@ class Server:
         self.port = port
         self.t = t
         self.p = p
+        sys.setcheckinterval(1000)
 
         SocketServer.ThreadingTCPServer.allow_reuse_address = True
         self.httpd = SocketServer.ThreadingTCPServer(
@@ -22,21 +23,23 @@ class Server:
 
         # Start a thread with the server -- that thread will then start one
         # more thread for each request
-        server_thread = threading.Thread(target=self.serve)
+        self.server_thread = threading.Thread(target=self.serve)
         # Exit the server thread when the main thread terminates
-        server_thread.daemon = True
-        server_thread.start()
+        self.server_thread.daemon = True
+        self.server_thread.start()
         print "serving at port", self.port
 
-        parser_thread = threading.Thread(target=self.p.parse(self.t))
-        parser_thread.daemon = True
-        parser_thread.start()
+        self.parser_thread = threading.Thread(target=self.p.parse(self.t))
+        self.parser_thread.daemon = True
+        self.parser_thread.start()
 
     def serve(self):
         try:
             self.httpd.serve_forever()
         except KeyboardInterrupt:
-            print "Server exiting...", id(self)
+            print "Server thread exiting..."
+            self.parser_thread._Thread__stop()
+            self.server_thread._Thread__stop()
         except:
             print "Unexpected error:", sys.exc_info()[0]
             raise
@@ -56,4 +59,5 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def finish(self):
         self.p.clearDatum()
         return
+
 
