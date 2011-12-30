@@ -151,13 +151,22 @@ class Parser(object):
                 print Exception("couldn't parse line: %s" % line)
                 self.data['error']['count'] += 1
 
-            print self.datum
+            #print self.datum
             # we are still in the for line in lines loop!
             if self.datum:      # check if a regex did match
                 # Critical section start
                 self.__lockObj.acquire()
                 type = self.underscore(self.datum['type'])
+                #print type
                 if type == 'par_new':
+                    self.data[type]['real_time'] += self.datum['real_time']
+                    self.data[type]['sys_time'] += self.datum['sys_time']
+                    self.data[type]['user_time'] += self.datum['user_time']
+                    self.data[type]['newgen_kb_collected'] += self.datum['newgen_kb_before'] - self.datum['newgen_kb_after']
+                    self.data[type]['total_kb_collected'] += self.datum['total_kb_before'] - self.datum['total_kb_after']
+                    self.data[type]['count'] += 1
+
+                elif type == 'ps_young_gen':
                     self.data[type]['real_time'] += self.datum['real_time']
                     self.data[type]['sys_time'] += self.datum['sys_time']
                     self.data[type]['user_time'] += self.datum['user_time']
@@ -180,10 +189,12 @@ class Parser(object):
                     self.data[type]['real_time'] += self.datum['real_time']
                     self.data[type]['sys_time'] += self.datum['sys_time']
                     self.data[type]['user_time'] += self.datum['user_time']
+                    self.data[type]['count'] += 1
 
-            #  Exit from critical section
-            self.__lockObj.release()
-            # Critical section end
+                #print "data:", self.data
+                #  Exit from critical section
+                self.__lockObj.release()
+                # Critical section end
         return
 
     def getMetrics(self):
