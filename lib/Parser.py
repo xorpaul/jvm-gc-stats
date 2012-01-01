@@ -38,8 +38,8 @@ class Parser(object):
         return
 
     def parse(self, t):
-        #string = "2011-12-02T22:54:14.955+0100: 39.331: [GC 39.331: [ParNew: 57344K->7619K(57344K), 0.4781460 secs] 63799K->21896K(516096K), 0.4905760 secs] [Times: user=0.38 sys=0.00, real=0.49 secs]"
-        regexParNew = re.compile(r"(.*): \d+\.\d+: \[GC \d+\.\d+: \[ParNew: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]\n")
+        regexParNew = re.compile(r"(.*): \d+\.\d+: \[GC \d+\.\d+: \[ParNew: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
+        #2011-12-02T22:54:14.955+0100: 39.331: [GC 39.331: [ParNew: 57344K->7619K(57344K), 0.4781460 secs] 63799K->21896K(516096K), 0.4905760 secs] [Times: user=0.38 sys=0.00, real=0.49 secs]
         regexProFail = re.compile(r"(.*): \d+\.\d+: \[GC \d+\.\d+: \[ParNew \(promotion failed\): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\]\d+\.\d+: \[CMS: (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexPSY = re.compile(r"(.*): \d+\.\d+: \[GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexCMS = re.compile(r"(.*): \d+\.\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]")
@@ -184,8 +184,9 @@ class Parser(object):
                     self.data[type]['total_kb_collected'] += self.datum['total_kb_before'] - self.datum['total_kb_after']
                     self.data[type]['count'] += 1
 
-                elif type in ['cms_initial_mark', 'cms_concurrent_mark', 'cms_concurrent_abortable_preclean', 
-                              'cms_remark', 'cms_concurrent_sweep', 'cms_concurrent_reset']:
+                elif type in ['cms_initial_mark', 'cms_concurrent_mark', 
+                            'cms_concurrent_abortable_preclean', 'cms_remark', 
+                            'cms_concurrent_sweep', 'cms_concurrent_reset']:
                     self.data[type]['real_time'] += self.datum['real_time']
                     self.data[type]['sys_time'] += self.datum['sys_time']
                     self.data[type]['user_time'] += self.datum['user_time']

@@ -12,13 +12,23 @@ class Tailer:
 
 
     def follow(self, fd):
+        partHead = None
         try:
             self.fd.seek(0,2)      # Go to the end of the file
             while True:
+                partTail = None
                 line = self.fd.readline()
                 if not line:
-                    time.sleep(0.1)    # Sleep briefly
+                    time.sleep(1)    # Sleep briefly
                     continue
-                yield line
+                if line[-1] != '\n':
+                    partHead = line
+                    #print "found partial line:", partHead
+                elif line[-1] == '\n' and partHead:
+                    partTail = line
+                    #print "will concatinate part:", partHead, "and partTail:", partTail
+                    line = partHead + partTail
+                if line[-1] == '\n':
+                    yield line
         except KeyboardInterrupt:
             print "Tailer thread exiting..."
