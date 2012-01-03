@@ -9,14 +9,14 @@ import Tailer
 
 class Server:
     def __init__(self, port, p, t):
-        self.port = port
         self.t = t
         self.p = p
         sys.setcheckinterval(1000)
 
+        listeningHost = socket.gethostbyaddr(socket.gethostname())[0]
+
         SocketServer.ThreadingTCPServer.allow_reuse_address = True
-        self.httpd = SocketServer.ThreadingTCPServer(
-                    (socket.gethostbyaddr(socket.gethostname())[0], self.port), 
+        self.httpd = SocketServer.ThreadingTCPServer( (listeningHost, port), 
                     #SimpleHTTPServer.SimpleHTTPRequestHandler)
                     CustomHandler)
         self.httpd.allow_reuse_address = True        # Ignore TIME_WAIT
@@ -27,7 +27,7 @@ class Server:
         # Exit the server thread when the main thread terminates
         self.server_thread.daemon = True
         self.server_thread.start()
-        print "serving at port", self.port
+        print "serving at %s:%i" % (listeningHost, port)
 
         self.parser_thread = threading.Thread(target=self.p.parse(self.t))
         self.parser_thread.daemon = True
@@ -48,6 +48,11 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         self.p = Parser.Parser()
+
+        #print "path:", self.path
+        if self.path == "/?reset=1":
+            self.p.clearData()
+
         result = self.p.getMetrics()
 
         self.send_response(200)
@@ -55,9 +60,4 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(result + "\n")
         return
-
-    def finish(self):
-        self.p.clearDatum()
-        return
-
 
