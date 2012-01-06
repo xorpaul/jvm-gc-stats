@@ -26,11 +26,20 @@ jkalucki https://github.com/jkalucki/jvm-gc-stats
 
 USAGE
 -------
+
+ parse-gc.py -f LOGILE [-P PORT|-p PID]
+
 Will print GC metrics in JSON format for every line it can parse.
 If the java pid argument is given it will also jstat the old and perm
 memory utilization using OGMX and PGMX.
 jstat calls can be skipped if the URI in the GET requests contains jstat=0
 Collected data can be cleared if the URI in the GET requests contains reset=1
+
+
+Example calls:
+    parse-gc.py -f gc.log
+    parse-gc.py -f gc.log -P 5000
+    parse-gc.py -f gc.log -p `pgrep java` -P 5000
 
 LICENSE
 -------
