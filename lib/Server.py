@@ -6,6 +6,7 @@ import SimpleHTTPServer
 
 import Parser
 import Tailer
+import JstatMonitor
 
 class Server:
     def __init__(self, port, p, t):
@@ -29,7 +30,7 @@ class Server:
         self.server_thread.start()
         print "serving at %s:%i" % (listeningHost, port)
 
-        self.parser_thread = threading.Thread(target=self.p.parse(self.t))
+        self.parser_thread = threading.Thread(target=self.p.follow(self.t))
         self.parser_thread.daemon = True
         self.parser_thread.start()
 
@@ -47,13 +48,21 @@ class Server:
 class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
-        self.p = Parser.Parser()
+        p = Parser.Parser()
 
         #print "path:", self.path
-        if self.path == "/?reset=1":
-            self.p.clearData()
+        if "reset=1" in self.path:
+            p.clearData()
 
-        result = self.p.getMetrics()
+        if p.pid and not "jstat=0" in self.path:
+            #print "pid:", p.pid
+            m = JstatMonitor.JstatMonitor(p.pid)
+
+            #self.jstat_thread = threading.Thread(target= m.parseJstat())
+            values = m.parseJstat()
+            p.addMetrics(values)
+
+        result = p.getMetrics()
 
         self.send_response(200)
         self.send_header('Content-type','text/json')
