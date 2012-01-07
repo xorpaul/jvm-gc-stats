@@ -113,8 +113,7 @@ class Parser(object):
 
         elif regexCMS.match(line):
             datum['timestamp'] = regexCMS.match(line).group(1)
-            datum['type'] = self.underscore(
-                                regexCMS.match(line).group(2))
+            datum['type'] = self.underscore(regexCMS.match(line).group(2))
 
         elif regexCMSr.match(line):
             datum['type'] = 'cms_remark'
@@ -139,8 +138,7 @@ class Parser(object):
 
         elif regexCMScs.match(line):
             datum['timestamp'] = regexCMScs.match(line).group(1)
-            datum['type'] = self.underscore(
-                                regexCMScs.match(line).group(2))
+            datum['type'] = self.underscore(regexCMScs.match(line).group(2))
             datum['user_time'] = float(regexCMScs.match(line).group(3))
             datum['sys_time'] = float(regexCMScs.match(line).group(4))
             datum['real_time'] = float(regexCMScs.match(line).group(5))
