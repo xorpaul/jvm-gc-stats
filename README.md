@@ -9,7 +9,7 @@ The data and graphs produced are intended to support operational
 monitoring and inform GC tuning decisions.
 
 The JVM is assumed to be Java6 and invoked with the following flags:
-<pre>
+
     -XX:+UseConcMarkSweepGC
     -verbosegc
     -XX:+PrintGCDetails
@@ -17,15 +17,14 @@ The JVM is assumed to be Java6 and invoked with the following flags:
 
 optional: 
     -XX:+PrintGCDateStamps
-</pre>
 
 
 Fork from:
-<pre>
+
 jkalucki https://github.com/jkalucki/jvm-gc-stats
 |_________ ryanking https://github.com/ryanking/jvm-gc-stats
             |______ this here
-</pre>
+
 
 USAGE
 -------
