@@ -1,17 +1,19 @@
 import sys
 import socket
+import time
+import thread
 import threading
+import Queue
 import SocketServer
 import SimpleHTTPServer
 
 import Parser
 import Tailer
-import JstatMonitor
 
 class Server:
-    def __init__(self, port, p, t):
-        self.t = t
-        self.p = p
+    """ HTTP server for serving the parsed GC data """
+    def __init__(self, port, services):
+        self.p = Parser.Parser()
         sys.setcheckinterval(1000)
 
         listeningHost = socket.gethostbyaddr(socket.gethostname())[0]
@@ -24,26 +26,36 @@ class Server:
 
         # Start a thread with the server -- that thread will then start one
         # more thread for each request
-        self.server_thread = threading.Thread(target=self.serve)
-        # Exit the server thread when the main thread terminates
-        self.server_thread.daemon = True
-        self.server_thread.start()
+        #self.server_thread = threading.Thread(name='server', target=self.serve)
+        ## Exit the server thread when the main thread terminates
+        #self.server_thread.daemon = True
+        #self.server_thread.start()
         print "serving at %s:%i" % (listeningHost, port)
 
-        self.parser_thread = threading.Thread(target=self.p.follow(self.t))
-        self.parser_thread.daemon = True
-        self.parser_thread.start()
 
-    def serve(self):
+        for service in services:
+            #print "service:", service
+            t = Tailer.Tailer(service['logfile'], service['sleep'])
+            thread.start_new_thread(self.p.follow, (t, service['name']))
+
+            # Couldn't get it to work with thread module :/
+            #t = Tailer.Tailer(service['logfile'], q)
+            #thread = threading.Thread(name=service['name'],
+            #                    target=self.p.follow(t))
+            #thread.daemon = True
+            #threads.append(thread)
+            #thread.start()
+
         try:
             self.httpd.serve_forever()
         except KeyboardInterrupt:
-            print "Server thread exiting..."
-            self.parser_thread._Thread__stop()
-            self.server_thread._Thread__stop()
+            print "exiting..."
         except:
             print "Unexpected error:", sys.exc_info()[0]
             raise
+            pass
+
+        return
 
 class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
@@ -53,14 +65,6 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         #print "path:", self.path
         if "reset=1" in self.path:
             p.clearData()
-
-        if p.pid and not "jstat=0" in self.path:
-            #print "pid:", p.pid
-            m = JstatMonitor.JstatMonitor(p.pid)
-
-            #self.jstat_thread = threading.Thread(target= m.parseJstat())
-            values = m.parseJstat()
-            p.addMetrics(values)
 
         result = p.getMetrics()
 

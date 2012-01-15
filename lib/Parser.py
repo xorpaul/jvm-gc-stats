@@ -23,7 +23,6 @@ class Parser(object):
         return self.__instance
 
     def __init__(self):
-        #print "ID Parser obj:", id(self), "- Parser init"
         if not self.__init:
             datum = {}
             self.pid = None
@@ -31,8 +30,7 @@ class Parser(object):
             # Needed to set default values for dictionary, 
             # otherwise I would get KeyErrors when trying to 
             # sum up numbers in getMetrics
-            self.data = DefaultDict(DefaultDict(0.0), **DefaultDict(0.0))
-            self.data['errors'] = 0
+            self.clearData()
             self.__init = True
 
         return
@@ -51,27 +49,25 @@ class Parser(object):
     def getPid(self):
         return self.pid
 
-    def follow(self, t):
+    def follow(self, t, service):
         loglines = t.tail()
         for line in loglines:
-            self.parse(line)
+            self.parse(line, service)
 
-    def parse(self, line):
+    def parse(self, line, service):
         regexParNew = re.compile(r"(.*: )?\d+\.\d+: \[GC \d+\.\d+: \[ParNew: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
-        #2011-12-02T22:54:14.955+0100: 39.331: [GC 39.331: [ParNew: 57344K->7619K(57344K), 0.4781460 secs] 63799K->21896K(516096K), 0.4905760 secs] [Times: user=0.38 sys=0.00, real=0.49 secs]
+        regexDefNew = re.compile(r"(.*: )?\d+\.\d+: \[GC \d+\.\d+: \[DefNew: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexProFail = re.compile(r"(.*: )?\d+\.\d+: \[GC \d+\.\d+: \[ParNew \(promotion failed\): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\]\d+\.\d+: \[CMS: (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexPSY = re.compile(r"(.*: )?\d+\.\d+: \[GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexCMS = re.compile(r"(.*: )?\d+\.\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]")
         regexCMSr = re.compile(r"(.*: )?\d+\.\d+: \[GC\[YG occupancy: \d+ K \(\d+ K\)\]\d+\.\d+: \[Rescan \(parallel\) , \d+\.\d+ secs\]\d+\.\d+: \[weak refs processing, \d+\.\d+ secs\] \[1 CMS-remark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexCMSi = re.compile(r"(.*: )?\d+\.\d+: \[GC \[1 CMS\-initial\-mark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
-        regexCMSc = re.compile(r"(.*: )?\d+\.\d+: \[(CMS-concurrent-abortable-preclean|CMS-concurrent-preclean|CMS-concurrent-mark): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
+        regexCMSc = re.compile(r"(.*: )?\[(CMS-concurrent-abortable-preclean|CMS-concurrent-preclean|CMS-concurrent-mark): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexCMScs = re.compile(r"(.*: )?\d+\.\d+: \[(CMS-concurrent-reset|CMS-concurrent-sweep): \d+\.\d+\/\d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexFull = re.compile(r"(.*: )?\d+\.\d+: \[Full GC(?: \(System\))? \d+\.\d+: \[CMS: (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexFulln = re.compile(r"(.*: )?\d+\.\d+: \[Full GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] \[ParOldGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\) \[PSPermGen: (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexFullc = re.compile(r"(.*: )?\d+\.\d+: \[Full GC \d+\.\d+: \[CMS \(concurrent mode failure\)\[YG occupancy: \d+ K \(\d+ K\)\]\d+\.\d+: \[weak refs processing, \d+\.\d+ secs\]: (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
-        #2012-01-03T20:02:05.259+0100: 3.765: [GC 3.765: [ParNew: 14784K->1600K(14784K), 0.0211600 secs] 17799K->6030K(63936K), 0.0212600 secs] [Times: user=0.04 sys=0.00, real=0.02 secs]
-        #2012-01-03T20:02:05.509+0100: 4.016: [Full GC 4.016: [CMS (concurrent mode failure)[YG occupancy: 5207 K (14784 K)]4.074: [weak refs processing, 0.0000560 secs]: 4430K->3972K(49152K), 0.0758790 secs] 9638K->9179K(63936K), [CMS Perm : 16383K->16383K(16384K)], 0.0760660 secs] [Times: user=0.11 sys=0.02, real=0.07 secs]
-        regexIgnore = re.compile(r"\s*(par|eden|from|to|concurrent)")
+        regexFullf = re.compile(r".*\(concurrent mode failure\): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
 
         datum = {}
         if regexParNew.match(line):
@@ -84,6 +80,17 @@ class Parser(object):
             datum['user_time'] = float(regexParNew.match(line).group(6))
             datum['sys_time'] = float(regexParNew.match(line).group(7))
             datum['real_time'] = float(regexParNew.match(line).group(8))
+
+        elif regexDefNew.match(line):
+            datum['type'] = 'def_new'
+            datum['timestamp'] = regexDefNew.match(line).group(1)
+            datum['newgen_kb_before'] = int(regexDefNew.match(line).group(2))
+            datum['newgen_kb_after'] = int(regexDefNew.match(line).group(3))
+            datum['total_kb_before'] = int(regexDefNew.match(line).group(4))
+            datum['total_kb_after'] = int(regexDefNew.match(line).group(5))
+            datum['user_time'] = float(regexDefNew.match(line).group(6))
+            datum['sys_time'] = float(regexDefNew.match(line).group(7))
+            datum['real_time'] = float(regexDefNew.match(line).group(8))
 
         elif regexProFail.match(line):
             datum['type'] = 'promotion_failure'
@@ -185,12 +192,21 @@ class Parser(object):
             datum['sys_time'] = float(regexFullc.match(line).group(9))
             datum['real_time'] = float(regexFullc.match(line).group(10))
 
-        elif regexIgnore.match(line):
-            pass
+        elif regexFullf.match(line):
+            datum['type'] = 'full'
+            datum['oldgen_kb_before'] = int(regexFullf.match(line).group(1))
+            datum['oldgen_kb_after'] = int(regexFullf.match(line).group(2))
+            datum['total_kb_before'] = int(regexFullf.match(line).group(3))
+            datum['total_kb_after'] = int(regexFullf.match(line).group(4))
+            datum['permgen_kb_before'] = int(regexFullf.match(line).group(5))
+            datum['permgen_kb_after'] = int(regexFullf.match(line).group(6))
+            datum['user_time'] = float(regexFullf.match(line).group(7))
+            datum['sys_time'] = float(regexFullf.match(line).group(8))
+            datum['real_time'] = float(regexFullf.match(line).group(9))
 
         else:
-            print Exception("couldn't parse line: %s" % line)
             self.data['errors'] += 1
+            print Exception("couldn't parse line: %s" % repr(line))
 
         #print "datum:", datum
         if datum:      # check if a regex did match
@@ -198,49 +214,49 @@ class Parser(object):
             self.__lockObj.acquire()
             type = datum['type']
             #print "type:", type
-            if type == 'par_new':
-                self.data[type]['real_time'] += datum['real_time']
-                self.data[type]['sys_time'] += datum['sys_time']
-                self.data[type]['user_time'] += datum['user_time']
-                self.data[type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[type]['count'] += 1
+            if type in ('par_new', 'def_new'):
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
+                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
+                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
 
             elif type == 'ps_young_gen':
-                self.data[type]['real_time'] += datum['real_time']
-                self.data[type]['sys_time'] += datum['sys_time']
-                self.data[type]['user_time'] += datum['user_time']
-                self.data[type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[type]['count'] += 1
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
+                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
+                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
 
             elif type == 'promotion_failure':
-                self.data[type]['real_time'] += datum['real_time']
-                self.data[type]['sys_time'] += datum['sys_time']
-                self.data[type]['user_time'] += datum['user_time']
-                self.data[type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
-                self.data[type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
-                self.data[type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[type]['count'] += 1
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
+                self.data[service][type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
+                self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
+                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
+                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
 
             elif type == 'full':
-                self.data[type]['real_time'] += datum['real_time']
-                self.data[type]['sys_time'] += datum['sys_time']
-                self.data[type]['user_time'] += datum['user_time']
-                self.data[type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
-                self.data[type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
-                self.data[type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[type]['count'] += 1
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
+                self.data[service][type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
+                self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
+                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
+                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
 
             elif type in ['cms_initial_mark', 'cms_concurrent_mark', 'cms_concurrent_preclean',
                         'cms_concurrent_abortable_preclean', 'cms_remark', 
                         'cms_concurrent_sweep', 'cms_concurrent_reset']:
-                self.data[type]['real_time'] += datum['real_time']
-                self.data[type]['sys_time'] += datum['sys_time']
-                self.data[type]['user_time'] += datum['user_time']
-                self.data[type]['count'] += 1
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
 
             datum.clear()
             #print "data:", self.data
@@ -281,7 +297,9 @@ class Parser(object):
         return self.data
 
     def clearData(self):
-        self.data = DefaultDict(DefaultDict(0.0), **DefaultDict(0.0))
+        self.data = DefaultDict(
+                (DefaultDict(DefaultDict(0), **DefaultDict(0))
+            ), **DefaultDict(0))
         self.data['errors'] = 0
         return
 
