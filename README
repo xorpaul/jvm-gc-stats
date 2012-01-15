@@ -14,13 +14,14 @@ The JVM is assumed to be Java6 and invoked with the following flags:
     -verbosegc
     -XX:+PrintGCDetails
     -XX:+PrintGCTimeStamps
-    supports
+    supports either
         -Xloggc:gc-`date +%F-%H-%M`.log
       or
         -Xloggc:gc.log
 
 optional: 
     -XX:+PrintGCDateStamps
+    -XX:+PrintTenuringDistribution
 
 
 DESCRIPTION
