@@ -60,6 +60,11 @@ class TestParser(unittest.TestCase):
         values = {'test': {'ps_young_gen': {'count': 1, 'newgen_kb_collected': 96000, 'total_kb_collected': 96000, 'sys_time': '0.00', 'real_time': '0.02', 'user_time': '0.07'}}, 'errors': 0}
         self.assert_parsed(line, values)
 
+    def testProFail(self):
+        line = "1427148.896: [GC 1427148.896: [DefNew (promotion failed) : 1173076K->1150629K(1228800K), 0.5152270 secs]1427149.411: [Tenured: 1310719K->1031593K(1310720K), 2.6800290 secs] 2474868K->1031593K(2539520K), [Perm : 185208K->185208K(185344K)], 3.1954800 secs] [Times: user=3.18 sys=0.00, real=3.20 secs] \n"
+        values = {'test': {'promotion_failure': {'count': 1, 'newgen_kb_collected': 22447, 'total_kb_collected': 1443275, 'permgen_kb_collected': 0, 'sys_time': '0.00', 'real_time': '3.20', 'oldgen_kb_collected': 279126, 'user_time': '3.18'}}, 'errors': 0}
+        self.assert_parsed(line, values)
+
     def testMultipleTypes(self):
         linePSY = "2011-05-11T04:24:20.339+0000: 1.012: [GC [PSYoungGen: 96640K->640K(112704K)] 96640K->640K(370368K), 0.0123710 secs] [Times: user=0.07 sys=0.00, real=0.02 secs]"
         lineFull = "2011-05-16T19:01:49.148+0000: 6.888: [Full GC 6.906: [CMS: 22065K->39440K(7340032K), 0.3012410 secs] 240184K->39440K(8283776K), [CMS Perm : 35150K->35025K(35236K)], 0.3014270 secs] [Times: user=0.30 sys=0.01, real=0.32 secs]"
@@ -88,7 +93,7 @@ class TestParser(unittest.TestCase):
 def suite():
     tests = ['testParserSingleton', 'testParNew',
             'testFull', 'testFulln', 'testCMSc',
-            'testPSY', 'testMultipleTypes',
+            'testPSY', 'testProFail', 'testMultipleTypes',
             'testOptionalDateStamps'
             ]
 
