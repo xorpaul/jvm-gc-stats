@@ -56,3 +56,4 @@
 150.555: [CMS-concurrent-reset: 0.004/0.004 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
 153.080: [Full GC 153.080: [CMS: 16754K->21456K(32768K), 0.2015650 secs] 33708K->21456K(62336K), [CMS Perm : 36735K->36734K(36736K)], 0.2016380 secs] [Times: user=0.20 sys=0.00, real=0.20 secs] 
 154.206: [Full GC 154.207: [CMS: 21456K->21439K(32768K), 0.1919270 secs] 22061K->21439K(62336K), [CMS Perm : 36735K->36735K(36736K)], 0.1920040 secs] [Times: user=0.19 sys=0.00, real=0.20 secs] 
+1427148.896: [GC 1427148.896: [DefNew (promotion failed) : 1173076K->1150629K(1228800K), 0.5152270 secs]1427149.411: [Tenured: 1310719K->1031593K(1310720K), 2.6800290 secs] 2474868K->1031593K(2539520K), [Perm : 185208K->185208K(185344K)], 3.1954800 secs] [Times: user=3.18 sys=0.00, real=3.20 secs] 
