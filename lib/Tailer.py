@@ -11,7 +11,8 @@ from stat import ST_SIZE, ST_DEV, ST_INO
 class Tailer:
     """ Tails a gc log and yields each line to Parser """
 
-    def __init__(self, logfile, sleep):
+    def __init__(self, service, logfile, sleep):
+        self.service = service
         self.sleep = sleep
         self.originalLogfile = logfile
         self.logfile = self.getCurrentLogfile(logfile)
@@ -32,6 +33,7 @@ class Tailer:
 
 
     def getCurrentLogfile(self, originalLogfile):
+        logfile = None
         if float(sys.version[:3]) < 2.5:
           logfiles = sorted(glob.glob(originalLogfile), key=path.getctime)
           if len(logfiles) > 1:
@@ -46,7 +48,7 @@ class Tailer:
         if logfile:
             return logfile
         else:
-            sys.stderr.write('ERROR: No logfile found for: %s\n' % logfile)
+            sys.stderr.write('ERROR: No logfile found for: %s\n' % originalLogfile)
             sys.exit(1)
 
 
@@ -66,7 +68,7 @@ class Tailer:
         # array for partial reads that doesn't end with a newline character
         parts = []
         # regex pattern for lines that can be ignored
-        #regexIgnoreOnlyTimes = re.compile(r' \[Times: user=\d+\.\d+ sys=\d+\.\d+, real=\d+\.\d+ secs\]')
+        regexIgnoreOnlyTimes = re.compile(r'^ \[Times: user=\d+\.\d+ sys=\d+\.\d+, real=\d+\.\d+ secs\]')
         regexIgnoreHeap1 = re.compile(r'Heap')
         regexIgnoreHeap2 = re.compile(r'\s*(par|eden|from|to|concurrent)')
         # or for partial lines with -XX:+PrintTenuringDistribution
@@ -104,15 +106,16 @@ class Tailer:
               # So I need to skip the rest of the loop, otherwise it
               # would yield just the previous part.
 
-                  #print 'found line containing only newline char:', repr(line)
-                  pass
+                  #print '[%s]: Found line containing only newline char: %s' % (self.service, repr(line))
+                  continue
 
-            if line.endswith('New\n') or line.endswith('New'):
+            if (line.endswith('New\n') or line.endswith('New')
+                or line.endswith('GC\n') or line.endswith('GC')):
                 # newline terminated line,
                 # but only partial line, because
                 # of -XX:+PrintTenuringDistribution
 
-                #print 'found line with 'New\\n' or 'New' at the end:', repr(line)
+                #print ("[%s]: Found partial TenuringDistribution line: %s") % (self.service, repr(line))
 
                 # I will chomp the line, because 
                 # it is actualy a partial line
@@ -123,7 +126,6 @@ class Tailer:
                 parts.append(line)
                 #print 'found partial line:', parts
             elif (line and line[-1] == '\n'
-                 #and not regexIgnoreOnlyTimes.match(line)
                  and not regexIgnoreHeap1.match(line)
                  and not regexIgnoreHeap2.match(line)
                  and not regexIgnoreTenuringDist1.match(line)
@@ -146,5 +148,6 @@ class Tailer:
                 # only yield, when there is a newline character at the end
                 # and no ignore regex pattern matched
                 # the other scenarios should have been taken care of before
-                #print 'will yield:', repr(line)
-                yield line
+                if not regexIgnoreOnlyTimes.match(line):
+                    #print 'will yield:', repr(line)
+                    yield line
