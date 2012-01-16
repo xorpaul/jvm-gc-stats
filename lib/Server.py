@@ -35,7 +35,7 @@ class Server:
 
         for service in services:
             #print "service:", service
-            t = Tailer.Tailer(service['logfile'], service['sleep'])
+            t = Tailer.Tailer(service['name'], service['logfile'], service['sleep'])
             thread.start_new_thread(self.p.follow, (t, service['name']))
 
             # Couldn't get it to work with thread module :/
