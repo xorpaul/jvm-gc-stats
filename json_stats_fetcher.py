@@ -7,11 +7,13 @@
  Author: Andreas Paul
 """
 
-desc = """Fetch JSON formated website and push metrics to ganglia"""
+desc = """Fetch JSON formated website and push metrics to ganglia via gmetric"""
 
 epilog = """
 Example call:
-%prog -H foobar.enbw.net -p 12345 -u /pretty=1 -a 'foo:bar'"""
+%prog -H foobar
+or
+%prog -H foobar -p 12345 -u /pretty=1 -a 'foo:bar'"""
 
 import os
 import sys
@@ -39,7 +41,7 @@ def main():
                                 description=desc)
 
     parser.add_option('-H', '--Host', dest='host',
-                      help='host to send the SOAP request to')
+                      help='host to fetch the JSON page from')
     parser.add_option('-p', '--port', dest='port', type='int',
                       default=5000,
                       help='port to use on the target host')
@@ -48,7 +50,7 @@ def main():
                       help='optional prefix for ganglia names')
     parser.add_option('-u', '--uri', dest='uri', type='string',
                       default='/',
-                      help='URI. which will be called')
+                      help='URI, which will be called')
     parser.add_option('-a', '--auth', dest='credentials',
                       help='username and password in \''
                       '\' and seperated with :')
