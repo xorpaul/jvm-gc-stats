@@ -67,7 +67,12 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         if "reset=1" in self.path:
             p.clearData()
 
-        result = p.getMetrics()
+        if "pretty=1" in self.path:
+            result = p.getMetrics(True)
+        elif "xml=1" in self.path:
+            result = p.getXMLMetrics()
+        else:
+            result = p.getMetrics(False)
 
         self.send_response(200)
         self.send_header('Content-type','text/json')

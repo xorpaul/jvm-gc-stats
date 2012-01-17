@@ -280,12 +280,23 @@ class Parser(object):
             # Critical section end
         return
 
-    def getMetrics(self):
+    def getMetrics(self, pretty=False):
         """ Returns the current data in JSON format.
 
         Gets called from every request.
         """
-        return json.dumps(self.data)
+        if pretty:
+            return json.dumps(self.data, sort_keys=True, indent=4)
+        else:
+            return json.dumps(self.data)
+
+    def getXMLMetrics(self):
+        """ Returns the current data in XML format.
+
+        Can get called from every request.
+        """
+        #TODO:
+        return str(self.data)
 
     def addMetrics(self, values):
         """ Adds old and perm gen memory utilization from jstat.
