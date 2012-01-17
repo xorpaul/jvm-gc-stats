@@ -72,6 +72,7 @@ class Tailer:
         regexIgnoreHeap1 = re.compile(r'Heap')
         regexIgnoreHeap2 = re.compile(r'\s*(par|eden|from|to|concurrent)')
         # or for partial lines with -XX:+PrintTenuringDistribution
+        regexFirstTenuringDistLine = re.compile(r'.*(?:New|GC|\(promotion failed\))(?:\n)?$')
         regexIgnoreTenuringDist1 = re.compile(r'Desired survivor size \d+ bytes, new threshold \d+ \(max \d+\)')
         regexIgnoreTenuringDist2 = re.compile(r'- age\s+\d+:')
 
@@ -109,8 +110,7 @@ class Tailer:
                   #print '[%s]: Found line containing only newline char: %s' % (self.service, repr(line))
                   continue
 
-            if (line.endswith('New\n') or line.endswith('New')
-                or line.endswith('GC\n') or line.endswith('GC')):
+            if line and regexFirstTenuringDistLine.match(line):
                 # newline terminated line,
                 # but only partial line, because
                 # of -XX:+PrintTenuringDistribution
