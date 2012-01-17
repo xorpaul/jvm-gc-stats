@@ -13,6 +13,7 @@ epilog = """
 Example call:
 %prog -H foobar.enbw.net -p 12345 -u /pretty=1 -a 'foo:bar'"""
 
+import os
 import sys
 import urllib2
 import base64
@@ -26,9 +27,12 @@ try:
 except ImportError:
     import simplejson as json
 
-def main():
-    """ Sends HTTP-Request and parses the JSON response to call gmetric
 
+GMETRIC = '/usr/bin/gmetric'
+
+
+def main():
+    """ Sends HTTP-Request and parses the JSON response to call gmetric with it
     """
     usage = 'usage: %prog [options]'
     parser = OptionParser(usage, version="%prog 0.9",
@@ -54,6 +58,8 @@ def main():
                                                 '(default: %default)')
     parser.add_option('-d', '--dmax', dest='stat_timeout', type='int',
                     default=5*60, help='The lifetime in seconds of this metric')
+    parser.add_option('-n', '--dryrun', dest='dryrun', action='store_true',
+                    default=False, help='only print the gmetric calls')
     parser.add_option('-v', '--verbose', dest='debug', action='store_true',
                     default=False, help='print additional debug information')
 
@@ -139,8 +145,6 @@ def main():
     output = feed.read()     # Read server response
     logger.info('server response: %s' % (output))
 
-
-
     # Check for correct type
     try:
         resultDict = json.loads(output)
@@ -154,17 +158,37 @@ def main():
     #    pprint(resultDict)
     #    print "key: %s - values: %s" % (k, v)
 
-    for k, v in resultDict.iteritems():
+    for service, v in resultDict.iteritems():
         #xor
-        if k == 'errors':
-            print "gmetric -t int16 -n \"%s%s\" -v \"%s\" -u \"Errors\" -d %i" % (options.prefix, k, v, options.stat_timeout)
+        if service == 'errors':
+            callGmetric(options.prefix+service, v,
+                'int16', 'Errors', options.stat_timeout, options.dryrun)
         else:
-            for k1, v1 in resultDict[k].iteritems():
-                for k2, v2 in resultDict[k][k1].iteritems():
-                    if k2.endswith('_time'):
-                        print "gmetric -t float -n \"%s%s\" -v \"%s\" -u \"Seconds\" -d %i" % (options.prefix, k+'.'+k1+'.'+k2, v2, options.stat_timeout)
-                    elif k2.endswith('_collected'):
-                        print "gmetric -t int16 -n \"%s%s\" -v \"%s\" -u \"Kilobytes\" -d %i" % (options.prefix, k+'.'+k1+'.'+k2, v2, options.stat_timeout)
+            for gctype, v1 in resultDict[service].iteritems():
+                for metric, value in resultDict[service][gctype].iteritems():
+                    if metric.endswith('_time'):
+                        callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                            'float', 'Seconds', options.stat_timeout, options.dryrun)
+                    elif metric.endswith('_collected'):
+                        callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                            'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
+
+
+def callGmetric(name, value, type, unit, stat_timeout, dryrun):
+    logger = logging.getLogger()
+    logger.info('%s --name=%s --value=%s --type=%s --units=\'%s\' '
+        '--dmax=%i' % (GMETRIC, name, value, type, unit, stat_timeout))
+
+    if dryrun:
+        print ('%s --name=%s --value=%s --type=%s --units=\'%s\' '
+            '--dmax=%i' % (GMETRIC, name, value, type, unit, stat_timeout))
+
+    os.spawnl(os.P_WAIT, GMETRIC, 'gmetric',
+            '--name=%s' % name,
+            '--value=%s' % value,
+            '--type=%s' % type,
+            '--units=\'%s\'' % unit,
+            '--dmax=%i' % stat_timeout)
 
 
 def createRequest(host, port, credentials, uri):
@@ -182,7 +206,7 @@ def createRequest(host, port, credentials, uri):
         req: Prepared HTTP Request with target host, port and 
             optional Basic-Auth Header
     """
-    url = ('http://%s:%i/%s') % (host, port, uri)
+    url = ('http://%s:%i%s') % (host, port, uri)
 
     logging.info('sending GET-Request to %s' % (url))
 
