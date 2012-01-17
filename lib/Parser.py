@@ -207,15 +207,17 @@ class Parser(object):
 
         elif regexFullg.match(line):
             datum['type'] = 'full'
-            datum['oldgen_kb_before'] = int(regexFullg.match(line).group(2))
-            datum['oldgen_kb_after'] = int(regexFullg.match(line).group(4))
-            datum['total_kb_before'] = int(regexFullg.match(line).group(5))
-            datum['total_kb_after'] = int(regexFullg.match(line).group(6))
-            datum['permgen_kb_before'] = int(regexFullg.match(line).group(7))
-            datum['permgen_kb_after'] = int(regexFullg.match(line).group(8))
-            datum['user_time'] = float(regexFullg.match(line).group(9))
-            datum['sys_time'] = float(regexFullg.match(line).group(10))
-            datum['real_time'] = float(regexFullg.match(line).group(11))
+            datum['newgen_kb_before'] = int(regexFullg.match(line).group(2))
+            datum['newgen_kb_after'] = int(regexFullg.match(line).group(3))
+            datum['oldgen_kb_before'] = int(regexFullg.match(line).group(4))
+            datum['oldgen_kb_after'] = int(regexFullg.match(line).group(5))
+            datum['total_kb_before'] = int(regexFullg.match(line).group(6))
+            datum['total_kb_after'] = int(regexFullg.match(line).group(7))
+            datum['permgen_kb_before'] = int(regexFullg.match(line).group(8))
+            datum['permgen_kb_after'] = int(regexFullg.match(line).group(9))
+            datum['user_time'] = float(regexFullg.match(line).group(10))
+            datum['sys_time'] = float(regexFullg.match(line).group(11))
+            datum['real_time'] = float(regexFullg.match(line).group(12))
 
         else:
             self.data['errors'] += 1
