@@ -65,7 +65,7 @@ def main():
 
     for m in mandatories:
         if not options.__dict__[m]:
-            return retNagios('u',
+            return sys.exit(
                     'mandatory option -%s for %s is missing! Try --help' % (
                                     mandatories[m], m))
 
