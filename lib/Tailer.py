@@ -8,6 +8,7 @@ from stat import ST_SIZE, ST_DEV, ST_INO
 
 # http://toic.org/blog/2009/08/11/tail-f-in-python-truncate-aware/
 
+
 class Tailer:
     """ Tails a gc log and yields each line to Parser """
 
@@ -26,20 +27,20 @@ class Tailer:
             sys.stderr.write('ERROR: Can\'t open: %s\n' % (logfile, msg))
             sys.exit(1)
 
-        # fd.tell() returns an integer giving the file object's current position
-        # in the file, measured in bytes from the beginning of the file.
+        # fd.tell() returns an integer giving the file
+        # object's current position in the file, measured
+        # in bytes from the beginning of the file.
         self.pos = self.fd.tell()
-        self.fd.seek(0,2)      # Go to the end of the file
-
+        self.fd.seek(0, 2)      # Go to the end of the file
 
     def getCurrentLogfile(self, originalLogfile):
         logfile = None
         if float(sys.version[:3]) < 2.5:
-          logfiles = sorted(glob.glob(originalLogfile), key=path.getctime)
-          if len(logfiles) > 1:
-              logfile = logfiles[-1]
-          elif len(logfiles) == 1:
-              logfile = logfiles[0]
+            logfiles = sorted(glob.glob(originalLogfile), key=path.getctime)
+            if len(logfiles) > 1:
+                logfile = logfiles[-1]
+            elif len(logfiles) == 1:
+                logfile = logfiles[0]
 
         else:
             # Changed in version 2.5: Added support for
@@ -51,10 +52,9 @@ class Tailer:
             sys.stderr.write('ERROR: No logfile found for: %s\n' % originalLogfile)
             sys.exit(1)
 
-
     def reset(self):
         """
-        Close the old file handler, open the new file 
+        Close the old file handler, open the new file
         and start reading the new file from the top by setting
         self.pos to 0
         """
@@ -62,7 +62,6 @@ class Tailer:
         self.fd = open(self.logfile, 'r')
         self.pos = 0
         self.inode = stat(self.logfile)[ST_INO]
-
 
     def tail(self):
         # array for partial reads that doesn't end with a newline character
@@ -101,14 +100,14 @@ class Tailer:
                 pass
 
             if line == '\n':
-              # Sometimes the newline character is the only thing that
-              # was read. It did happen after '12.182: [GC 12.182: [DefNew'
-              # was read with PrintTenuringDistribution activated.
-              # So I need to skip the rest of the loop, otherwise it
-              # would yield just the previous part.
+                # Sometimes the newline character is the only thing that
+                # was read. It did happen after '12.182: [GC 12.182: [DefNew'
+                # was read with PrintTenuringDistribution activated.
+                # So I need to skip the rest of the loop, otherwise it
+                # would yield just the previous part.
 
-                  #print '[%s]: Found line containing only newline char: %s' % (self.service, repr(line))
-                  continue
+                #print '[%s]: Found line containing only newline char: %s' % (self.service, repr(line))
+                continue
 
             if line and regexFirstTenuringDistLine.match(line):
                 # newline terminated line,
@@ -117,7 +116,7 @@ class Tailer:
 
                 #print ("[%s]: Found partial TenuringDistribution line: %s") % (self.service, repr(line))
 
-                # I will chomp the line, because 
+                # I will chomp the line, because
                 # it is actualy a partial line
                 line = line.rstrip('\n')
             if line and line[-1] != '\n':
@@ -138,7 +137,7 @@ class Tailer:
                     for partHead in parts[::-1]:
                         # loops through previous partial reads in reverse order
                         # and merges it at the beginning of the current read
-                        #print ('concatenate', repr(partHead), 
+                        #print ('concatenate', repr(partHead),
                         #    '----AND----', repr(line))
                         line = partHead + line
                     #print 'results in line:', line
