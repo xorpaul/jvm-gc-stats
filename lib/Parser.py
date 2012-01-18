@@ -227,6 +227,12 @@ class Parser(object):
             # Critical section start
             self.__lockObj.acquire()
             type = datum['type']
+
+            #TODO: any type of collection metrics
+            #print self.data[service]
+            #self.data[service]['count'] += 1
+            #self.data[service]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
+
             #print "type:", type
             if type in ('par_new', 'def_new', 'ps_young_gen'):
                 if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
@@ -240,7 +246,7 @@ class Parser(object):
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
                 self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
                 self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['count'] += 1
                 self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
@@ -262,7 +268,7 @@ class Parser(object):
                 self.data[service][type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
                 self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
                 self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['count'] += 1
                 self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
@@ -284,7 +290,7 @@ class Parser(object):
                 self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
                 self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['count'] += 1
                 self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
