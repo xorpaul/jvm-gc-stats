@@ -1,5 +1,6 @@
 import re
 import copy
+import time
 import thread
 import os.path
 from string import maketrans
@@ -24,8 +25,8 @@ class Parser(object):
 
     def __init__(self):
         if not self.__init:
-            datum = {}
             self.pid = None
+            # also initializes the data dict
             self.clearData()
             self.__init = True
 
@@ -245,6 +246,7 @@ class Parser(object):
                 self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_newgen_kb_collected'] = self.data[service][type]['newgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
 
             elif type in ('promotion_failure', 'full'):
                 if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
@@ -268,6 +270,7 @@ class Parser(object):
                 self.data[service][type]['avg_oldgen_kb_collected'] = self.data[service][type]['oldgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_permgen_kb_collected'] = self.data[service][type]['permgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
 
             elif type in ['cms_initial_mark', 'cms_concurrent_mark', 'cms_concurrent_preclean',
                         'cms_concurrent_abortable_preclean', 'cms_remark', 
@@ -285,6 +288,7 @@ class Parser(object):
                 self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
                 self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
 
             datum.clear()
             #print "data:", self.data
@@ -298,6 +302,9 @@ class Parser(object):
 
         Gets called from every GET HTTP request.
         """
+        timeSinceStart = time.time() - self.startTime
+        self.data['seconds_since_last_reset'] = '%.2f' % timeSinceStart
+        
         if pretty:
             return json.dumps(self.data, sort_keys=True, indent=4)
         else:
@@ -340,6 +347,8 @@ class Parser(object):
                 (DefaultDict(DefaultDict(0), **DefaultDict(0))
             ), **DefaultDict(0))
         self.data['errors'] = 0
+        self.startTime = time.time()
+        self.data['seconds_since_last_reset'] = 0
         return
 
     def underscore(self, camel_cased_word):
