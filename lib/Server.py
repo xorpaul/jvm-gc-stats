@@ -10,8 +10,10 @@ import SimpleHTTPServer
 import Parser
 import Tailer
 
+
 class Server:
     """ HTTP server for serving the parsed GC data """
+
     def __init__(self, port, services):
         self.p = Parser.Parser()
         sys.setcheckinterval(1000)
@@ -20,23 +22,16 @@ class Server:
         listeningHost = socket.gethostbyaddr(socket.gethostname())[-1][0]
 
         SocketServer.ThreadingTCPServer.allow_reuse_address = True
-        self.httpd = SocketServer.ThreadingTCPServer( (listeningHost, port), 
-                    #SimpleHTTPServer.SimpleHTTPRequestHandler)
+        self.httpd = SocketServer.ThreadingTCPServer((listeningHost, port),
                     CustomHandler)
         self.httpd.allow_reuse_address = True        # Ignore TIME_WAIT
 
-        # Start a thread with the server -- that thread will then start one
-        # more thread for each request
-        #self.server_thread = threading.Thread(name='server', target=self.serve)
-        ## Exit the server thread when the main thread terminates
-        #self.server_thread.daemon = True
-        #self.server_thread.start()
         print "serving at %s:%i" % (listeningHost, port)
-
 
         for service in services:
             #print "service:", service
-            t = Tailer.Tailer(service['name'], service['logfile'], service['sleep'])
+            t = Tailer.Tailer(service['name'],
+                    service['logfile'], service['sleep'])
             thread.start_new_thread(self.p.follow, (t, service['name']))
 
             # Couldn't get it to work with thread module :/
@@ -58,6 +53,7 @@ class Server:
 
         return
 
+
 class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
@@ -69,14 +65,11 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         if "pretty=1" in self.path:
             result = p.getMetrics(True)
-        elif "xml=1" in self.path:
-            result = p.getXMLMetrics()
         else:
             result = p.getMetrics(False)
 
         self.send_response(200)
-        self.send_header('Content-type','text/json')
+        self.send_header('Content-type', 'text/json')
         self.end_headers()
         self.wfile.write(result + "\n")
         return
-
