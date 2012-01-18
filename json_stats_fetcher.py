@@ -167,16 +167,26 @@ def main():
                 'int16', 'Errors', options.stat_timeout, options.dryrun)
         elif service == 'seconds_since_last_reset':
             callGmetric(options.prefix+service, v,
-                'int16', 'Seconds', options.stat_timeout, options.dryrun)
+                'float', 'Seconds', options.stat_timeout, options.dryrun)
         else:
-            for gctype, v1 in resultDict[service].iteritems():
-                for metric, value in resultDict[service][gctype].iteritems():
-                    if ('time') in metric:
-                        callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
-                            'float', 'Seconds', options.stat_timeout, options.dryrun)
-                    elif metric.endswith('_collected'):
-                        callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
-                            'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
+            for gctype, service_metric_value in resultDict[service].iteritems():
+                if gctype == 'count':
+                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                        'int16', 'count', options.stat_timeout, options.dryrun)
+                elif gctype == 'avg_time_between_any_type_collections':
+                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                        'float', 'Seconds', options.stat_timeout, options.dryrun)
+                elif ('allocated') in gctype:
+                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                        'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
+                else:
+                    for metric, value in resultDict[service][gctype].iteritems():
+                        if ('time') in metric:
+                            callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                                'float', 'Seconds', options.stat_timeout, options.dryrun)
+                        elif metric.endswith('_collected'):
+                            callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                                'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
 
 
 def callGmetric(name, value, type, unit, stat_timeout, dryrun):
