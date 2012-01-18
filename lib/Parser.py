@@ -26,10 +26,6 @@ class Parser(object):
         if not self.__init:
             datum = {}
             self.pid = None
-            # http://stackoverflow.com/a/39858/682847
-            # Needed to set default values for dictionary, 
-            # otherwise I would get KeyErrors when trying to 
-            # sum up numbers in getMetrics
             self.clearData()
             self.__init = True
 
@@ -70,7 +66,9 @@ class Parser(object):
         regexFullf = re.compile(r".*\(concurrent mode failure\): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexFullg = re.compile(r"(.*: )?\d+\.\d+: \[GC(?: \(System\))? \d+\.\d+: \[(?:Def|Par)New: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\]\d+\.\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm\s*:\s*(\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
 
-        datum = {}
+        # need to initialize with newgen values, because some full GC lines 
+        # contain newgen values and some do not
+        datum = {'newgen_kb_before': 0, 'newgen_kb_after': 0}
         if regexParNew.match(line):
             datum['type'] = 'par_new'
             datum['timestamp'] = regexParNew.match(line).group(1)
@@ -229,23 +227,32 @@ class Parser(object):
             self.__lockObj.acquire()
             type = datum['type']
             #print "type:", type
-            if type in ('par_new', 'def_new'):
+            if type in ('par_new', 'def_new', 'ps_young_gen'):
+                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
+                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
+                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
+                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
+                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
+                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
                 self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
                 self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
                 self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
                 self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
                 self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_newgen_kb_collected'] = self.data[service][type]['newgen_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
 
-            elif type == 'ps_young_gen':
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
-
-            elif type == 'promotion_failure':
+            elif type in ('promotion_failure', 'full'):
+                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
+                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
+                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
+                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
+                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
+                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
                 self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
                 self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
@@ -254,24 +261,30 @@ class Parser(object):
                 self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
                 self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
                 self.data[service][type]['count'] = self.data[service][type]['count'] + 1
-
-            elif type == 'full':
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
-                self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
-                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_newgen_kb_collected'] = self.data[service][type]['newgen_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_oldgen_kb_collected'] = self.data[service][type]['oldgen_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_permgen_kb_collected'] = self.data[service][type]['permgen_kb_collected'] / self.data[service][type]['count']
+                self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
 
             elif type in ['cms_initial_mark', 'cms_concurrent_mark', 'cms_concurrent_preclean',
                         'cms_concurrent_abortable_preclean', 'cms_remark', 
                         'cms_concurrent_sweep', 'cms_concurrent_reset']:
+                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
+                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
+                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
+                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
+                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
+                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
                 self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
                 self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
                 self.data[service][type]['count'] = self.data[service][type]['count'] + 1
+                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
 
             datum.clear()
             #print "data:", self.data
@@ -283,7 +296,7 @@ class Parser(object):
     def getMetrics(self, pretty=False):
         """ Returns the current data in JSON format.
 
-        Gets called from every request.
+        Gets called from every GET HTTP request.
         """
         if pretty:
             return json.dumps(self.data, sort_keys=True, indent=4)
@@ -341,7 +354,13 @@ class Parser(object):
 
 ## {{{ http://code.activestate.com/recipes/389639/ (r1)
 class DefaultDict(dict):
-    """Dictionary with a default value for unknown keys."""
+    """Dictionary with a default value for unknown keys
+
+       http://stackoverflow.com/a/39858/682847
+
+       Needed to set default values for dictionary, 
+       otherwise I would get KeyErrors when trying to 
+       sum up numbers in getMetrics """
     def __init__(self, default):
         self.default = default
 
