@@ -165,10 +165,13 @@ def main():
         if service == 'errors':
             callGmetric(options.prefix+service, v,
                 'int16', 'Errors', options.stat_timeout, options.dryrun)
+        elif service == 'seconds_since_last_reset':
+            callGmetric(options.prefix+service, v,
+                'int16', 'Seconds', options.stat_timeout, options.dryrun)
         else:
             for gctype, v1 in resultDict[service].iteritems():
                 for metric, value in resultDict[service][gctype].iteritems():
-                    if metric.endswith('_time'):
+                    if ('time') in metric:
                         callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
                             'float', 'Seconds', options.stat_timeout, options.dryrun)
                     elif metric.endswith('_collected'):
