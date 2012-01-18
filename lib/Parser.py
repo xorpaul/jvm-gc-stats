@@ -11,12 +11,14 @@ except ImportError:
 
 import Tailer
 
+
 class Parser(object):
     # Singleton pattern
     # http://stackoverflow.com/a/1810367/682847
     __lockObj = thread.allocate_lock()  # lock object
     __instance = None  # the unique instance
     __init = None  # the unique instance
+
     def __new__(self, *args, **kwargs):
         #print "ID Parser obj:", id(self), "- Parser new"
         if not self.__instance:
@@ -31,20 +33,6 @@ class Parser(object):
             self.__init = True
 
         return
-
-    def setPid(self, pid):
-        if pid < 2:
-            raise Exception("Java process id '%i' < 2 not possible!" % pid)
-        if os.path.exists("/proc/"):
-            if not os.path.exists("/proc/%i" % pid):
-                raise Exception("pid '%i' does not exist!" % pid)
-
-        print "jstating pid %i" % pid
-        self.pid = pid
-        return
-
-    def getPid(self):
-        return self.pid
 
     def follow(self, t, service):
         loglines = t.tail()
@@ -67,7 +55,7 @@ class Parser(object):
         regexFullf = re.compile(r".*\(concurrent mode failure\): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
         regexFullg = re.compile(r"(.*: )?\d+\.\d+: \[GC(?: \(System\))? \d+\.\d+: \[(?:Def|Par)New: (\d+)K\->(\d+)K\(\d+K\), \d+\.\d+ secs\]\d+\.\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+\.\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm\s*:\s*(\d+)K->(\d+)K\(\d+K\)\], \d+\.\d+ secs\] \[Times: user=(\d+\.\d+) sys=(\d+\.\d+), real=(\d+\.\d+) secs\]")
 
-        # need to initialize with newgen values, because some full GC lines 
+        # need to initialize with newgen values, because some full GC lines
         # contain newgen values and some do not
         datum = {'newgen_kb_before': 0, 'newgen_kb_after': 0}
         if regexParNew.match(line):
@@ -223,78 +211,89 @@ class Parser(object):
             print Exception("[%s]: couldn't parse line: %s" % (service, repr(line)))
 
         #print "datum:", datum
-        if datum:      # check if a regex did match
+        if 'type' in datum:      # check if a regex did match
             # Critical section start
             self.__lockObj.acquire()
             type = datum['type']
 
-            #TODO: any type of collection metrics
-            #print self.data[service]
-            #self.data[service]['count'] += 1
-            #self.data[service]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
+            # metrics regardless of type
+            if not self.data[service]['count']:
+                self.data[service]['count'] = 0
+                self.data[service]['avg_time_between_any_type_collections'] = 0
+            self.data[service]['count'] += 1
+            self.data[service]['avg_time_between_any_type_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
+
+            # metrics that gets collected with every GC type
+            # total number of collections
+            self.data[service][type]['count'] += 1
+            # frequency of collections
+            self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
+            if not regexCMS.match(line): # except types like cms_concurrent_mark_start
+                # longest time spent in collection
+                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
+                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time']
+                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
+                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time']
+                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
+                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time']
+                # total time spent in collection
+                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+                # average time spent in collection
+                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+
 
             #print "type:", type
             if type in ('par_new', 'def_new', 'ps_young_gen'):
-                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
-                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
-                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
-                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
-                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
-                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] += 1
-                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                # number of bytes currently allocated
+                self.data[service]['cur_newgen_kb_allocated'] = datum['newgen_kb_after']
+                self.data[service]['cur_total_kb_allocated'] = datum['total_kb_after']
+
+                newDelta = datum['newgen_kb_before'] - datum['newgen_kb_after']
+                totalDelta = datum['total_kb_before'] - datum['total_kb_after']
+                if newDelta > self.data[service][type]['max_newgen_kb_collected']:
+                    self.data[service][type]['max_newgen_kb_collected'] = newDelta
+                if totalDelta > self.data[service][type]['max_total_kb_collected']:
+                    self.data[service][type]['max_total_kb_collected'] = totalDelta
+                # total number of bytes recovered
+                self.data[service][type]['newgen_kb_collected'] += newDelta
+                self.data[service][type]['total_kb_collected'] += totalDelta
+                # average number of bytes recovered per collection
                 self.data[service][type]['avg_newgen_kb_collected'] = self.data[service][type]['newgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
-                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
 
             elif type in ('promotion_failure', 'full'):
-                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
-                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
-                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
-                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
-                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
-                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['newgen_kb_collected'] += datum['newgen_kb_before'] - datum['newgen_kb_after']
-                self.data[service][type]['oldgen_kb_collected'] += datum['oldgen_kb_before'] - datum['oldgen_kb_after']
-                self.data[service][type]['permgen_kb_collected'] += datum['permgen_kb_before'] - datum['permgen_kb_after']
-                self.data[service][type]['total_kb_collected'] += datum['total_kb_before'] - datum['total_kb_after']
-                self.data[service][type]['count'] += 1
-                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                # number of bytes currently allocated
+                self.data[service]['cur_newgen_kb_allocated'] = datum['newgen_kb_after']
+                self.data[service]['cur_oldgen_kb_allocated'] = datum['oldgen_kb_after']
+                self.data[service]['cur_total_kb_allocated'] = datum['total_kb_after']
+                self.data[service]['cur_permgen_kb_allocated'] = datum['permgen_kb_after']
+
+                newDelta = datum['newgen_kb_before'] - datum['newgen_kb_after']
+                oldDelta = datum['oldgen_kb_before'] - datum['oldgen_kb_after']
+                totalDelta = datum['total_kb_before'] - datum['total_kb_after']
+                permDelta = datum['permgen_kb_before'] - datum['permgen_kb_after']
+                if newDelta > self.data[service][type]['max_newgen_kb_collected']:
+                    self.data[service][type]['max_newgen_kb_collected'] = newDelta
+                if oldDelta > self.data[service][type]['max_oldgen_kb_collected']:
+                    self.data[service][type]['max_oldgen_kb_collected'] = oldDelta
+                if totalDelta > self.data[service][type]['max_total_kb_collected']:
+                    self.data[service][type]['max_total_kb_collected'] = totalDelta
+                if permDelta > self.data[service][type]['max_oldgen_kb_collected']:
+                    self.data[service][type]['max_permgen_kb_collected'] = oldDelta
+                # total number of bytes recovered
+                self.data[service][type]['newgen_kb_collected'] += newDelta
+                self.data[service][type]['total_kb_collected'] += totalDelta
+                self.data[service][type]['oldgen_kb_collected'] += oldDelta
+                self.data[service][type]['permgen_kb_collected'] += permDelta
+                # average number of bytes recovered per collection
                 self.data[service][type]['avg_newgen_kb_collected'] = self.data[service][type]['newgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_oldgen_kb_collected'] = self.data[service][type]['oldgen_kb_collected'] / self.data[service][type]['count']
-                self.data[service][type]['avg_permgen_kb_collected'] = self.data[service][type]['permgen_kb_collected'] / self.data[service][type]['count']
                 self.data[service][type]['avg_total_kb_collected'] = self.data[service][type]['total_kb_collected'] / self.data[service][type]['count']
-                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
-
-            elif type in ['cms_initial_mark', 'cms_concurrent_mark', 'cms_concurrent_preclean',
-                        'cms_concurrent_abortable_preclean', 'cms_remark', 
-                        'cms_concurrent_sweep', 'cms_concurrent_reset']:
-                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
-                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time'] 
-                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
-                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time'] 
-                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
-                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time'] 
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                self.data[service][type]['count'] += 1
-                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_permgen_kb_collected'] = self.data[service][type]['permgen_kb_collected'] / self.data[service][type]['count']
 
             datum.clear()
             #print "data:", self.data
@@ -310,36 +309,11 @@ class Parser(object):
         """
         timeSinceStart = time.time() - self.startTime
         self.data['seconds_since_last_reset'] = '%.2f' % timeSinceStart
-        
+
         if pretty:
             return json.dumps(self.data, sort_keys=True, indent=4)
         else:
             return json.dumps(self.data)
-
-    def getXMLMetrics(self):
-        """ Returns the current data in XML format.
-
-        Can get called from every request.
-        """
-        #TODO:
-        return str(self.data)
-
-    def addMetrics(self, values):
-        """ Adds old and perm gen memory utilization from jstat.
-
-        Gets only called if the pid argument was found and the GET
-        request URI doesn't contain jstat=0
-        """
-        # Critical section start
-        self.__lockObj.acquire()
-
-        self.data['perm'] = values['perm']
-        self.data['old'] = values['old']
-
-        #  Exit from critical section
-        self.__lockObj.release()
-        # Critical section end
-        return
 
     def getData(self):
         """ Returns the current data from the Parse object.
@@ -349,9 +323,7 @@ class Parser(object):
         return self.data
 
     def clearData(self):
-        self.data = DefaultDict(
-                (DefaultDict(DefaultDict(0), **DefaultDict(0))
-            ), **DefaultDict(0))
+        self.data = DefaultDict((DefaultDict(DefaultDict(0), **DefaultDict(0))), **DefaultDict(0))
         self.data['errors'] = 0
         self.startTime = time.time()
         self.data['seconds_since_last_reset'] = 0
@@ -373,14 +345,14 @@ class DefaultDict(dict):
 
        http://stackoverflow.com/a/39858/682847
 
-       Needed to set default values for dictionary, 
-       otherwise I would get KeyErrors when trying to 
-       sum up numbers in getMetrics """
+       Needed to set default values for dictionary,
+       otherwise I would get KeyErrors when trying to
+       sum up numbers"""
     def __init__(self, default):
         self.default = default
 
     def __getitem__(self, key):
-        if key in self: 
+        if key in self:
             return self.get(key)
         else:
             ## Need copy in case self.default is something like []
@@ -391,4 +363,3 @@ class DefaultDict(dict):
         copy.update(self)
         return copy
 ## end of http://code.activestate.com/recipes/389639/ }}}
-
