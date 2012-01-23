@@ -48,6 +48,10 @@ def main():
     parser.add_option('-P', '--prefix', dest='prefix', type='string',
                       default='',
                       help='optional prefix for ganglia names')
+    parser.add_option('-s', '--spoof', dest='spoof', type='string',
+                      help='IP address and name of host/device (colon separated) we are spoofing')
+    parser.add_option('-g', '--group', dest='group', type='string',
+                      help='group name of this metric')
     parser.add_option('-u', '--uri', dest='uri', type='string',
                       default='/',
                       help='URI, which will be called')
@@ -104,6 +108,8 @@ def main():
     logger.info('using for port: %s' % (options.port))
     logger.info('using for uri: %s' % (options.uri))
     logger.info('using for prefix: %s' % (options.prefix))
+    logger.info('using for spoof: %s' % (options.spoof))
+    logger.info('using for group: %s' % (options.group))
     logger.info('using for credentials: %s' % (options.credentials))
     logger.info('using for timeout threshold: %s' % (options.timeout))
     logger.info('using for stat_timeout: %s' % (options.stat_timeout))
@@ -160,45 +166,58 @@ def main():
     #    pprint(resultDict)
     #    print "key: %s - values: %s" % (k, v)
 
+    if options.prefix != '':
+      prefix = options.prefix + '.'
+    else:
+      prefix = options.prefix
+
+
     for service, v in resultDict.iteritems():
         #xor
         if service == 'errors':
-            callGmetric(options.prefix+service, v,
+            callGmetric(options.spoof, 'general', service, v,
                 'int16', 'Errors', options.stat_timeout, options.dryrun)
         elif service == 'seconds_since_last_reset':
-            callGmetric(options.prefix+service, v,
+            callGmetric(options.spoof, 'general', service, v,
                 'float', 'Seconds', options.stat_timeout, options.dryrun)
         else:
             for gctype, service_metric_value in resultDict[service].iteritems():
                 if gctype == 'count':
-                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                    callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'count', options.stat_timeout, options.dryrun)
                 elif gctype == 'avg_time_between_any_type_collections':
-                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                    callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'float', 'Seconds', options.stat_timeout, options.dryrun)
                 elif ('allocated') in gctype:
-                    callGmetric(options.prefix+service+'.'+gctype, service_metric_value,
+                    callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
                 else:
                     for metric, value in resultDict[service][gctype].iteritems():
                         if ('time') in metric:
-                            callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                            callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
                                 'float', 'Seconds', options.stat_timeout, options.dryrun)
                         elif metric.endswith('_collected'):
-                            callGmetric(options.prefix+service+'.'+gctype+'.'+metric, value,
+                            callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
                                 'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
+                        elif metric == 'count':
+                            callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
+                                'int16', 'count', options.stat_timeout, options.dryrun)
+                        else:
+                            print "undefinded metric:", metric
 
 
-def callGmetric(name, value, type, unit, stat_timeout, dryrun):
+def callGmetric(spoof, group, name, value, type, unit, stat_timeout, dryrun):
     logger = logging.getLogger()
-    logger.info('%s --name=%s --value=%s --type=%s --units=\'%s\' '
-        '--dmax=%i' % (GMETRIC, name, value, type, unit, stat_timeout))
+    logger.info('%s --group=%s --spoof=%s --name=%s --value=%s --type=%s --units=\'%s\' '
+        '--dmax=%i' % (GMETRIC, group, spoof, name, value, type, unit, stat_timeout))
 
     if dryrun:
-        print ('%s --name=%s --value=%s --type=%s --units=\'%s\' '
-            '--dmax=%i' % (GMETRIC, name, value, type, unit, stat_timeout))
+        print ('%s --group=%s --spoof=%s --name=%s --value=%s --type=%s --units=\'%s\' '
+            '--dmax=%i' % (GMETRIC, group, spoof, name, value, type, unit, stat_timeout))
 
     os.spawnl(os.P_WAIT, GMETRIC, 'gmetric',
+            '--group=%s' % group,
+            '--spoof=%s' % spoof,
             '--name=%s' % name,
             '--value=%s' % value,
             '--type=%s' % type,
