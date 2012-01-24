@@ -70,6 +70,8 @@ class Tailer:
         regexIgnoreOnlyTimes = re.compile(r'^ \[Times: user=\d+\.\d+ sys=\d+\.\d+, real=\d+\.\d+ secs\]')
         regexIgnoreHeap1 = re.compile(r'Heap')
         regexIgnoreHeap2 = re.compile(r'\s*(par|eden|from|to|concurrent)')
+        regexIgnoreHeap3 = re.compile(r'.*used(?: \d+K)? \[0x')
+        regexIgnoreHeap4 = re.compile(r'No shared spaces configured')
         # or for partial lines with -XX:+PrintTenuringDistribution
         regexFirstTenuringDistLine = re.compile(r'.*(?:New|GC|\(promotion failed\))(?:\n)?$')
         regexIgnoreTenuringDist1 = re.compile(r'Desired survivor size \d+ bytes, new threshold \d+ \(max \d+\)')
@@ -127,6 +129,8 @@ class Tailer:
             elif (line and line[-1] == '\n'
                  and not regexIgnoreHeap1.match(line)
                  and not regexIgnoreHeap2.match(line)
+                 and not regexIgnoreHeap3.match(line)
+                 and not regexIgnoreHeap4.match(line)
                  and not regexIgnoreTenuringDist1.match(line)
                  and not regexIgnoreTenuringDist2.match(line)):
                 # current read has newline char at the end and
