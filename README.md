@@ -10,7 +10,6 @@ monitoring and inform GC tuning decisions.
 
 The JVM is assumed to be Java6 and invoked with the following flags:
 
-    -XX:+UseConcMarkSweepGC
     -verbosegc
     -XX:+PrintGCDetails
     -XX:+PrintGCTimeStamps
