@@ -241,9 +241,9 @@ class Parser(object):
                 self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
                 self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
                 # average time spent in collection
-                self.data[service][type]['avg_real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_real_time'] = '%.3f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_sys_time'] = '%.3f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+                self.data[service][type]['avg_user_time'] = '%.3f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
 
 
             #print "type:", type
