@@ -1,9 +1,7 @@
 import sys
 import socket
 import time
-import thread
 import threading
-import Queue
 import SocketServer
 import SimpleHTTPServer
 
