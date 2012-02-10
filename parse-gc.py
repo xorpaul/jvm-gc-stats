@@ -39,7 +39,7 @@ def main():
 
     parser.add_option('-c', '--configfile', dest='configfile',
                     help='configfile with gc logs you want to parse')
-    parser.add_option('-p', '--port', dest='port', default='5000', type='int',
+    parser.add_option('-p', '--port', dest='port', type='int',
                     help='port at which the HTTP server will run')
 
     (options, args) = parser.parse_args()
