@@ -2,7 +2,6 @@
 """
  Filename: json_stats_fetcher.py
  Version: 0.9
- Requires: sys, urilib2, base64, optparse, time, socket, logging
  Date: 2012-01-17 14:49
  Author: Andreas Paul
 """
@@ -11,9 +10,7 @@ desc = """Fetch JSON formated website and push metrics to ganglia via gmetric"""
 
 epilog = """
 Example call:
-%prog -H foobar
-or
-%prog -H foobar -p 12345 -u /pretty=1 -a 'foo:bar'"""
+%prog -c example.conf"""
 
 import os
 import sys
@@ -22,7 +19,6 @@ import base64
 import socket
 import logging
 import time
-import thread
 import ConfigParser
 from optparse import OptionParser
 
@@ -30,8 +26,6 @@ try:
     import json
 except ImportError:
     import simplejson as json
-
-from gmetric import Gmetric, gmetric_write
 
 GMETRIC = '/usr/bin/gmetric'
 
@@ -86,8 +80,6 @@ def main():
             port = config.get(server, 'port')
         if config.has_option(server, 'dmax'):
             dmax = config.get(server, 'dmax')
-        else:
-            dmax = 65
         if config.has_option(server, 'spoof'):
             spoof = config.get(server, 'spoof')
         else:
@@ -236,7 +228,7 @@ def callGmetric(spoof, group, name, value, type, unit, dmax, dryrun):
 
 
 def createRequest(host, port, uri):
-    """ Creates the HTTP-Request with optional Basic-Auth Header
+    """ Creates the HTTP-Request
 
     Prepares the HTTP-Request by using the target host and port of the endpoint.
 
@@ -246,8 +238,7 @@ def createRequest(host, port, uri):
         uri: target uri, which will be appended to the URL
 
     Returns:
-        req: Prepared HTTP Request with target host, port and 
-            optional Basic-Auth Header
+        req: Prepared HTTP Request with target host, port
     """
     url = ('http://%s:%i%s') % (host, int(port), uri)
 
