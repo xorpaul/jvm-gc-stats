@@ -17,7 +17,7 @@ class Server:
         sys.setcheckinterval(1000)
 
         # should get the IP address
-        listeningHost = socket.gethostbyaddr(socket.gethostname())[-1][0]
+        listeningHost = socket.gethostbyaddr(socket.gethostname())[0]
 
         SocketServer.ThreadingTCPServer.allow_reuse_address = True
         self.httpd = SocketServer.ThreadingTCPServer((listeningHost, port),
