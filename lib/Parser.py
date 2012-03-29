@@ -67,9 +67,9 @@ class Parser(object):
             datum['newgen_kb_after'] = int(regexParNew.match(line).group(3))
             datum['total_kb_before'] = int(regexParNew.match(line).group(4))
             datum['total_kb_after'] = int(regexParNew.match(line).group(5))
-            datum['user_time'] = float(regexParNew.match(line).group(6))
-            datum['sys_time'] = float(regexParNew.match(line).group(7))
-            datum['real_time'] = float(regexParNew.match(line).group(8))
+            datum['user_time'] = float(regexParNew.match(line).group(6).replace(",","."))
+            datum['sys_time'] = float(regexParNew.match(line).group(7).replace(",","."))
+            datum['real_time'] = float(regexParNew.match(line).group(8).replace(",","."))
 
         elif regexDefNew.match(line):
             datum['type'] = 'def_new'
@@ -78,9 +78,9 @@ class Parser(object):
             datum['newgen_kb_after'] = int(regexDefNew.match(line).group(3))
             datum['total_kb_before'] = int(regexDefNew.match(line).group(4))
             datum['total_kb_after'] = int(regexDefNew.match(line).group(5))
-            datum['user_time'] = float(regexDefNew.match(line).group(6))
-            datum['sys_time'] = float(regexDefNew.match(line).group(7))
-            datum['real_time'] = float(regexDefNew.match(line).group(8))
+            datum['user_time'] = float(regexDefNew.match(line).group(6).replace(",","."))
+            datum['sys_time'] = float(regexDefNew.match(line).group(7).replace(",","."))
+            datum['real_time'] = float(regexDefNew.match(line).group(8).replace(",","."))
 
         elif regexProFail.match(line):
             datum['type'] = 'promotion_failure'
@@ -93,9 +93,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexProFail.match(line).group(7))
             datum['permgen_kb_before'] = int(regexProFail.match(line).group(8))
             datum['permgen_kb_after'] = int(regexProFail.match(line).group(9))
-            datum['user_time'] = float(regexProFail.match(line).group(10))
-            datum['sys_time'] = float(regexProFail.match(line).group(11))
-            datum['real_time'] = float(regexProFail.match(line).group(12))
+            datum['user_time'] = float(regexProFail.match(line).group(10).replace(",","."))
+            datum['sys_time'] = float(regexProFail.match(line).group(11).replace(",","."))
+            datum['real_time'] = float(regexProFail.match(line).group(12).replace(",","."))
 
         elif regexPSY.match(line):
             datum['type'] = 'ps_young_gen'
@@ -104,9 +104,9 @@ class Parser(object):
             datum['newgen_kb_after'] = int(regexPSY.match(line).group(3))
             datum['total_kb_before'] = int(regexPSY.match(line).group(4))
             datum['total_kb_after'] = int(regexPSY.match(line).group(5))
-            datum['user_time'] = float(regexPSY.match(line).group(6))
-            datum['sys_time'] = float(regexPSY.match(line).group(7))
-            datum['real_time'] = float(regexPSY.match(line).group(8))
+            datum['user_time'] = float(regexPSY.match(line).group(6).replace(",","."))
+            datum['sys_time'] = float(regexPSY.match(line).group(7).replace(",","."))
+            datum['real_time'] = float(regexPSY.match(line).group(8).replace(",","."))
 
         elif regexCMS.match(line):
             datum['timestamp'] = regexCMS.match(line).group(1)
@@ -115,30 +115,30 @@ class Parser(object):
         elif regexCMSr.match(line):
             datum['type'] = 'cms_remark'
             datum['timestamp'] = regexCMSr.match(line).group(1)
-            datum['user_time'] = float(regexCMSr.match(line).group(2))
-            datum['sys_time'] = float(regexCMSr.match(line).group(3))
-            datum['real_time'] = float(regexCMSr.match(line).group(4))
+            datum['user_time'] = float(regexCMSr.match(line).group(2).replace(",","."))
+            datum['sys_time'] = float(regexCMSr.match(line).group(3).replace(",","."))
+            datum['real_time'] = float(regexCMSr.match(line).group(4).replace(",","."))
 
         elif regexCMSi.match(line):
             datum['type'] = 'cms_initial_mark'
             datum['timestamp'] = regexCMSi.match(line).group(1)
-            datum['user_time'] = float(regexCMSi.match(line).group(2))
-            datum['sys_time'] = float(regexCMSi.match(line).group(3))
-            datum['real_time'] = float(regexCMSi.match(line).group(4))
+            datum['user_time'] = float(regexCMSi.match(line).group(2).replace(",","."))
+            datum['sys_time'] = float(regexCMSi.match(line).group(3).replace(",","."))
+            datum['real_time'] = float(regexCMSi.match(line).group(4).replace(",","."))
 
         elif regexCMSc.match(line):
             datum['timestamp'] = regexCMSc.match(line).group(1)
             datum['type'] = self.underscore(regexCMSc.match(line).group(2))
-            datum['user_time'] = float(regexCMSc.match(line).group(3))
-            datum['sys_time'] = float(regexCMSc.match(line).group(4))
-            datum['real_time'] = float(regexCMSc.match(line).group(5))
+            datum['user_time'] = float(regexCMSc.match(line).group(3).replace(",","."))
+            datum['sys_time'] = float(regexCMSc.match(line).group(4).replace(",","."))
+            datum['real_time'] = float(regexCMSc.match(line).group(5).replace(",","."))
 
         elif regexCMScs.match(line):
             datum['timestamp'] = regexCMScs.match(line).group(1)
             datum['type'] = self.underscore(regexCMScs.match(line).group(2))
-            datum['user_time'] = float(regexCMScs.match(line).group(3))
-            datum['sys_time'] = float(regexCMScs.match(line).group(4))
-            datum['real_time'] = float(regexCMScs.match(line).group(5))
+            datum['user_time'] = float(regexCMScs.match(line).group(3).replace(",","."))
+            datum['sys_time'] = float(regexCMScs.match(line).group(4).replace(",","."))
+            datum['real_time'] = float(regexCMScs.match(line).group(5).replace(",","."))
 
         elif regexFull.match(line):
             datum['type'] = 'full'
@@ -150,9 +150,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexFull.match(line).group(5))
             datum['permgen_kb_before'] = int(regexFull.match(line).group(6))
             datum['permgen_kb_after'] = int(regexFull.match(line).group(7))
-            datum['user_time'] = float(regexFull.match(line).group(8))
-            datum['sys_time'] = float(regexFull.match(line).group(9))
-            datum['real_time'] = float(regexFull.match(line).group(10))
+            datum['user_time'] = float(regexFull.match(line).group(8).replace(",","."))
+            datum['sys_time'] = float(regexFull.match(line).group(9).replace(",","."))
+            datum['real_time'] = float(regexFull.match(line).group(10).replace(",","."))
 
         elif regexFulln.match(line):
             datum['type'] = 'full'
@@ -165,9 +165,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexFulln.match(line).group(7))
             datum['permgen_kb_before'] = int(regexFulln.match(line).group(8))
             datum['permgen_kb_after'] = int(regexFulln.match(line).group(9))
-            datum['user_time'] = float(regexFulln.match(line).group(10))
-            datum['sys_time'] = float(regexFulln.match(line).group(11))
-            datum['real_time'] = float(regexFulln.match(line).group(12))
+            datum['user_time'] = float(regexFulln.match(line).group(10).replace(",","."))
+            datum['sys_time'] = float(regexFulln.match(line).group(11).replace(",","."))
+            datum['real_time'] = float(regexFulln.match(line).group(12).replace(",","."))
 
         elif regexFullc.match(line):
             datum['type'] = 'full'
@@ -178,9 +178,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexFullc.match(line).group(5))
             datum['permgen_kb_before'] = int(regexFullc.match(line).group(6))
             datum['permgen_kb_after'] = int(regexFullc.match(line).group(7))
-            datum['user_time'] = float(regexFullc.match(line).group(8))
-            datum['sys_time'] = float(regexFullc.match(line).group(9))
-            datum['real_time'] = float(regexFullc.match(line).group(10))
+            datum['user_time'] = float(regexFullc.match(line).group(8).replace(",","."))
+            datum['sys_time'] = float(regexFullc.match(line).group(9).replace(",","."))
+            datum['real_time'] = float(regexFullc.match(line).group(10).replace(",","."))
 
         elif regexFullf.match(line):
             datum['type'] = 'full'
@@ -190,9 +190,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexFullf.match(line).group(4))
             datum['permgen_kb_before'] = int(regexFullf.match(line).group(5))
             datum['permgen_kb_after'] = int(regexFullf.match(line).group(6))
-            datum['user_time'] = float(regexFullf.match(line).group(7))
-            datum['sys_time'] = float(regexFullf.match(line).group(8))
-            datum['real_time'] = float(regexFullf.match(line).group(9))
+            datum['user_time'] = float(regexFullf.match(line).group(7).replace(",","."))
+            datum['sys_time'] = float(regexFullf.match(line).group(8).replace(",","."))
+            datum['real_time'] = float(regexFullf.match(line).group(9).replace(",","."))
 
         elif regexFullg.match(line):
             datum['type'] = 'full'
@@ -204,9 +204,9 @@ class Parser(object):
             datum['total_kb_after'] = int(regexFullg.match(line).group(7))
             datum['permgen_kb_before'] = int(regexFullg.match(line).group(8))
             datum['permgen_kb_after'] = int(regexFullg.match(line).group(9))
-            datum['user_time'] = float(regexFullg.match(line).group(10))
-            datum['sys_time'] = float(regexFullg.match(line).group(11))
-            datum['real_time'] = float(regexFullg.match(line).group(12))
+            datum['user_time'] = float(regexFullg.match(line).group(10).replace(",","."))
+            datum['sys_time'] = float(regexFullg.match(line).group(11).replace(",","."))
+            datum['real_time'] = float(regexFullg.match(line).group(12).replace(",","."))
 
         else:
             self.data['errors'] += 1
