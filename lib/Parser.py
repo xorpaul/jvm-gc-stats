@@ -42,7 +42,7 @@ class Parser(object):
     def parse(self, line, service):
         # made Java 7 compliant when LC_NUMERIC isn't en_US 
         # with :'<,'>s/\\\.\\/[\\.,]\\/ vi ftw :)
-        regexParNew = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[ParNew: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K\->(\d+)K\(\d+K\)(?: icms_dc=\d+ ), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
+        regexParNew = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[ParNew: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K\->(\d+)K\(\d+K\)(?: icms_dc=\d+ )?, \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexDefNew = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[DefNew: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexProFail = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[(?:Par|Def)New \(promotion failed\)\s*: (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexPSY = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
