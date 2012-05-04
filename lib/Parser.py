@@ -7,7 +7,7 @@ from string import maketrans
 try:
     import json
 except ImportError:
-    from simplejson import simplejson as json
+    import simplejson as json
 
 import Tailer
 
@@ -54,7 +54,7 @@ class Parser(object):
         regexFull = re.compile(r"(.*: )?\d+[\.,]\d+: \[Full GC(?: \(System\))? \d+[\.,]\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexFulln = re.compile(r"(.*: )?\d+[\.,]\d+: \[Full GC(?: \(System\))? \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] \[(?:ParOldGen|PSOldGen): (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\) \[PSPermGen: (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexFullc = re.compile(r"(.*: )?\d+[\.,]\d+: \[Full GC \d+[\.,]\d+: \[CMS \(concurrent mode failure\)\[YG occupancy: \d+ K \(\d+ K\)\]\d+[\.,]\d+: \[weak refs processing, \d+[\.,]\d+ secs\]: (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
-        regexFullf = re.compile(r".*\(concurrent mode failure\): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\](?: icms_dc=\d+ ), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
+        regexFullf = re.compile(r".*\(concurrent mode failure\): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[CMS Perm : (\d+)K->(\d+)K\(\d+K\)\](?: icms_dc=\d+ )?, \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexFullg = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC(?: \(System\))? \d+[\.,]\d+: \[(?:Def|Par)New: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm\s*:\s*(\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
 
         # need to initialize with newgen values, because some full GC lines
