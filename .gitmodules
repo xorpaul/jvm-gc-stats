@@ -1,3 +1,0 @@
-[submodule "simplejson"]
-	path = simplejson
-	url = git://github.com/simplejson/simplejson.git
