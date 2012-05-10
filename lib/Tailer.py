@@ -76,6 +76,7 @@ class Tailer:
         regexFirstTenuringDistLine = re.compile(r'.*(?:New|GC|\(promotion failed\))(?:\n)?$')
         regexIgnoreTenuringDist1 = re.compile(r'Desired survivor size \d+ bytes, new threshold \d+ \(max \d+\)')
         regexIgnoreTenuringDist2 = re.compile(r'- age\s+\d+:')
+        regexIgnoreNullChar = re.compile(r'\x00')
 
         while True:
             self.pos = self.fd.tell()
@@ -132,7 +133,8 @@ class Tailer:
                  and not regexIgnoreHeap3.match(line)
                  and not regexIgnoreHeap4.match(line)
                  and not regexIgnoreTenuringDist1.match(line)
-                 and not regexIgnoreTenuringDist2.match(line)):
+                 and not regexIgnoreTenuringDist2.match(line)
+                 and not regexIgnoreNullChar.match(line)):
                 # current read has newline char at the end and
                 # also checks if current read is 'Heap' if JVM got
                 # terminated
