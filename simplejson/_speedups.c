@@ -89,8 +89,6 @@ typedef struct _PyEncoderObject {
     int use_decimal;
     int namedtuple_as_object;
     int tuple_as_array;
-    int bigint_as_string;
-    PyObject *item_sort_key;
 } PyEncoderObject;
 
 static PyMemberDef encoder_members[] = {
@@ -103,12 +101,8 @@ static PyMemberDef encoder_members[] = {
     {"sort_keys", T_OBJECT, offsetof(PyEncoderObject, sort_keys), READONLY, "sort_keys"},
     {"skipkeys", T_OBJECT, offsetof(PyEncoderObject, skipkeys), READONLY, "skipkeys"},
     {"key_memo", T_OBJECT, offsetof(PyEncoderObject, key_memo), READONLY, "key_memo"},
-    {"item_sort_key", T_OBJECT, offsetof(PyEncoderObject, item_sort_key), READONLY, "item_sort_key"},
     {NULL}
 };
-
-static PyObject *
-maybe_quote_bigint(PyObject *encoded, PyObject *obj);
 
 static Py_ssize_t
 ascii_escape_char(Py_UNICODE c, char *output, Py_ssize_t chars);
@@ -171,35 +165,6 @@ _is_namedtuple(PyObject *obj);
 #else
 #define MAX_EXPANSION MIN_EXPANSION
 #endif
-
-static PyObject *
-maybe_quote_bigint(PyObject *encoded, PyObject *obj)
-{
-    static PyObject *big_long = NULL;
-    static PyObject *small_long = NULL;
-    if (big_long == NULL) {
-        big_long = PyLong_FromLongLong(1LL << 53);
-        if (big_long == NULL) {
-            Py_DECREF(encoded);
-            return NULL;
-        }
-    }
-    if (small_long == NULL) {
-        small_long = PyLong_FromLongLong(-1LL << 53);
-        if (small_long == NULL) {
-            Py_DECREF(encoded);
-            return NULL;
-        }
-    }
-    if (PyObject_RichCompareBool(obj, big_long, Py_GE) ||
-        PyObject_RichCompareBool(obj, small_long, Py_LE)) {
-        PyObject* quoted = PyString_FromFormat("\"%s\"",
-                                               PyString_AsString(encoded));
-        Py_DECREF(encoded);
-        encoded = quoted;
-    }
-    return encoded;
-}
 
 static int
 _is_namedtuple(PyObject *obj)
@@ -1194,7 +1159,7 @@ _parse_object_unicode(PyScannerObject *s, PyObject *pystr, Py_ssize_t idx, Py_ss
         if (rval == NULL)
             return NULL;
     }
-
+    
     /* skip whitespace after { */
     while (idx <= end_idx && IS_WHITESPACE(str[idx])) idx++;
 
@@ -1935,7 +1900,7 @@ scanner_init(PyObject *self, PyObject *args, PyObject *kwds)
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:make_scanner", kwlist, &ctx))
         return -1;
-
+    
     if (s->memo == NULL) {
         s->memo = PyDict_New();
         if (s->memo == NULL)
@@ -2052,7 +2017,6 @@ encoder_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         s->sort_keys = NULL;
         s->skipkeys = NULL;
         s->key_memo = NULL;
-        s->item_sort_key = NULL;
     }
     return (PyObject *)s;
 }
@@ -2061,19 +2025,19 @@ static int
 encoder_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
     /* initialize Encoder object */
-    static char *kwlist[] = {"markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan", "key_memo", "use_decimal", "namedtuple_as_object", "tuple_as_array", "bigint_as_string", "item_sort_key", NULL};
+    static char *kwlist[] = {"markers", "default", "encoder", "indent", "key_separator", "item_separator", "sort_keys", "skipkeys", "allow_nan", "key_memo", "use_decimal", "namedtuple_as_object", "tuple_as_array", NULL};
 
     PyEncoderObject *s;
     PyObject *markers, *defaultfn, *encoder, *indent, *key_separator;
-    PyObject *item_separator, *sort_keys, *skipkeys, *allow_nan, *key_memo, *use_decimal, *namedtuple_as_object, *tuple_as_array, *bigint_as_string, *item_sort_key;
+    PyObject *item_separator, *sort_keys, *skipkeys, *allow_nan, *key_memo, *use_decimal, *namedtuple_as_object, *tuple_as_array;
 
     assert(PyEncoder_Check(self));
     s = (PyEncoderObject *)self;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOOOOOOOOOOOOOO:make_encoder", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOOOOOOOOOOOO:make_encoder", kwlist,
         &markers, &defaultfn, &encoder, &indent, &key_separator, &item_separator,
         &sort_keys, &skipkeys, &allow_nan, &key_memo, &use_decimal,
-        &namedtuple_as_object, &tuple_as_array, &bigint_as_string, &item_sort_key))
+        &namedtuple_as_object, &tuple_as_array))
         return -1;
 
     s->markers = markers;
@@ -2090,8 +2054,6 @@ encoder_init(PyObject *self, PyObject *args, PyObject *kwds)
     s->use_decimal = PyObject_IsTrue(use_decimal);
     s->namedtuple_as_object = PyObject_IsTrue(namedtuple_as_object);
     s->tuple_as_array = PyObject_IsTrue(tuple_as_array);
-    s->bigint_as_string = PyObject_IsTrue(bigint_as_string);
-    s->item_sort_key = item_sort_key;
 
     Py_INCREF(s->markers);
     Py_INCREF(s->defaultfn);
@@ -2102,7 +2064,6 @@ encoder_init(PyObject *self, PyObject *args, PyObject *kwds)
     Py_INCREF(s->sort_keys);
     Py_INCREF(s->skipkeys);
     Py_INCREF(s->key_memo);
-    Py_INCREF(s->item_sort_key);
     return 0;
 }
 
@@ -2228,14 +2189,8 @@ encoder_listencode_obj(PyEncoderObject *s, PyObject *rval, PyObject *obj, Py_ssi
         }
         else if (PyInt_Check(obj) || PyLong_Check(obj)) {
             PyObject *encoded = PyObject_Str(obj);
-            if (encoded != NULL) {
-                if (s->bigint_as_string) {
-                    encoded = maybe_quote_bigint(encoded, obj);
-                    if (encoded == NULL)
-                        break;
-                }
+            if (encoded != NULL)
                 rv = _steal_list_append(rval, encoded);
-            }
         }
         else if (PyFloat_Check(obj)) {
             PyObject *encoded = encoder_encode_float(s, obj);
@@ -2361,14 +2316,7 @@ encoder_listencode_dict(PyEncoderObject *s, PyObject *rval, PyObject *dct, Py_ss
         */
     }
 
-    if (PyCallable_Check(s->item_sort_key)) {
-        if (PyDict_CheckExact(dct))
-            items = PyDict_Items(dct);
-        else
-            items = PyMapping_Items(dct);
-        PyObject_CallMethod(items, "sort", "OO", Py_None, s->item_sort_key);
-    }
-    else if (PyObject_IsTrue(s->sort_keys)) {
+    if (PyObject_IsTrue(s->sort_keys)) {
         /* First sort the keys then replace them with (key, value) tuples. */
         Py_ssize_t i, nitems;
         if (PyDict_CheckExact(dct))
@@ -2628,7 +2576,6 @@ encoder_traverse(PyObject *self, visitproc visit, void *arg)
     Py_VISIT(s->sort_keys);
     Py_VISIT(s->skipkeys);
     Py_VISIT(s->key_memo);
-    Py_VISIT(s->item_sort_key);
     return 0;
 }
 
@@ -2648,7 +2595,6 @@ encoder_clear(PyObject *self)
     Py_CLEAR(s->sort_keys);
     Py_CLEAR(s->skipkeys);
     Py_CLEAR(s->key_memo);
-    Py_CLEAR(s->item_sort_key);
     return 0;
 }
 

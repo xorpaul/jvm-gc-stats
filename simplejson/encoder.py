@@ -107,8 +107,7 @@ class JSONEncoder(object):
             check_circular=True, allow_nan=True, sort_keys=False,
             indent=None, separators=None, encoding='utf-8', default=None,
             use_decimal=True, namedtuple_as_object=True,
-            tuple_as_array=True, bigint_as_string=False,
-            item_sort_key=None):
+            tuple_as_array=True):
         """Constructor for JSONEncoder, with sensible defaults.
 
         If skipkeys is false, then it is a TypeError to attempt
@@ -161,14 +160,6 @@ class JSONEncoder(object):
 
         If tuple_as_array is true (the default), tuple (and subclasses) will
         be encoded as JSON arrays.
-
-        If bigint_as_string is true (not the default), ints 2**53 and higher
-        or lower than -2**53 will be encoded as strings. This is to avoid the
-        rounding that happens in Javascript otherwise.
-
-        If specified, item_sort_key is a callable used to sort the items in
-        each dictionary. This is useful if you want to sort items other than
-        in alphabetical order by key.
         """
 
         self.skipkeys = skipkeys
@@ -179,10 +170,10 @@ class JSONEncoder(object):
         self.use_decimal = use_decimal
         self.namedtuple_as_object = namedtuple_as_object
         self.tuple_as_array = tuple_as_array
-        self.bigint_as_string = bigint_as_string
-        self.item_sort_key = item_sort_key
-        if indent is not None and not isinstance(indent, basestring):
+        try:
             indent = indent * ' '
+        except TypeError:
+            pass
         self.indent = indent
         if separators is not None:
             self.item_separator, self.key_separator = separators
@@ -296,15 +287,13 @@ class JSONEncoder(object):
                 markers, self.default, _encoder, self.indent,
                 self.key_separator, self.item_separator, self.sort_keys,
                 self.skipkeys, self.allow_nan, key_memo, self.use_decimal,
-                self.namedtuple_as_object, self.tuple_as_array,
-                self.bigint_as_string, self.item_sort_key)
+                self.namedtuple_as_object, self.tuple_as_array)
         else:
             _iterencode = _make_iterencode(
                 markers, self.default, _encoder, self.indent, floatstr,
                 self.key_separator, self.item_separator, self.sort_keys,
                 self.skipkeys, _one_shot, self.use_decimal,
-                self.namedtuple_as_object, self.tuple_as_array,
-                self.bigint_as_string, self.item_sort_key)
+                self.namedtuple_as_object, self.tuple_as_array)
         try:
             return _iterencode(o, 0)
         finally:
@@ -341,7 +330,6 @@ class JSONEncoderForHTML(JSONEncoder):
 def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
         _key_separator, _item_separator, _sort_keys, _skipkeys, _one_shot,
         _use_decimal, _namedtuple_as_object, _tuple_as_array,
-        _bigint_as_string, _item_sort_key,
         ## HACK: hand-optimized bytecode; turn globals into locals
         False=False,
         True=True,
@@ -358,8 +346,6 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
         str=str,
         tuple=tuple,
     ):
-    if _item_sort_key and not callable(_item_sort_key):
-        raise TypeError("item_sort_key must be None or callable")
 
     def _iterencode_list(lst, _current_indent_level):
         if not lst:
@@ -394,10 +380,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
             elif value is False:
                 yield buf + 'false'
             elif isinstance(value, (int, long)):
-                yield ((buf + str(value))
-                       if (not _bigint_as_string or
-                           (-1 << 53) < value < (1 << 53))
-                           else (buf + '"' + str(value) + '"'))
+                yield buf + str(value)
             elif isinstance(value, float):
                 yield buf + _floatstr(value)
             elif _use_decimal and isinstance(value, Decimal):
@@ -445,10 +428,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
             newline_indent = None
             item_separator = _item_separator
         first = True
-        if _item_sort_key:
-            items = dct.items()
-            items.sort(key=_item_sort_key)
-        elif _sort_keys:
+        if _sort_keys:
             items = dct.items()
             items.sort(key=lambda kv: kv[0])
         else:
@@ -487,10 +467,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
             elif value is False:
                 yield 'false'
             elif isinstance(value, (int, long)):
-                yield (str(value)
-                       if (not _bigint_as_string or
-                           (-1 << 53) < value < (1 << 53))
-                           else ('"' + str(value) + '"'))
+                yield str(value)
             elif isinstance(value, float):
                 yield _floatstr(value)
             elif _use_decimal and isinstance(value, Decimal):
@@ -528,10 +505,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
         elif o is False:
             yield 'false'
         elif isinstance(o, (int, long)):
-            yield (str(o)
-                   if (not _bigint_as_string or
-                       (-1 << 53) < o < (1 << 53))
-                       else ('"' + str(o) + '"'))
+            yield str(o)
         elif isinstance(o, float):
             yield _floatstr(o)
         elif isinstance(o, list):
