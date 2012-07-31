@@ -67,7 +67,7 @@ class Tailer:
         # array for partial reads that doesn't end with a newline character
         parts = []
         # regex pattern for lines that can be ignored
-        regexIgnoreOnlyTimes = re.compile(r'^ \[Times: user=\d+\.\d+ sys=\d+\.\d+, real=\d+\.\d+ secs\]')
+        regexIgnoreOnlyTimes = re.compile(r'^ \[Times: user=\d+[\.,]\d+ sys=\d+[\.,]\d+, real=\d+[\.,]\d+ secs\]')
         regexIgnoreHeap1 = re.compile(r'Heap')
         regexIgnoreHeap2 = re.compile(r'\s*(par|eden|from|to|concurrent)')
         regexIgnoreHeap3 = re.compile(r'.*used(?: \d+K)? \[0x')
