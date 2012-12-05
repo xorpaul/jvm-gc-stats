@@ -225,7 +225,7 @@ class Parser(object):
             self.data[service]['count'] += 1
             self.data[service]['avg_time_between_any_type_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
 
-            # metrics that gets collected with every GC type
+            # metrics that get collected with every GC type
             # total number of collections
             self.data[service][type]['count'] += 1
             # frequency of collections
