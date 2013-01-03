@@ -46,7 +46,6 @@ class Parser(object):
         regexDefNew = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[DefNew: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexProFail = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[(?:Par|Def)New \(promotion failed\)\s*: (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexPSY = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC(?:--)? \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
-        regexCMS = re.compile(r"(.*: )?\d+[\.,]\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]")
         regexCMSr = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC\[YG occupancy: \d+ K \(\d+ K\)\]\d+[\.,]\d+: \[Rescan \(parallel\) , \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[weak refs processing, \d+[\.,]\d+ secs\](?:\d+[\.,]\d+: \[class unloading, \d+[\.,]\d+ secs\])?(?:\d+[\.,]\d+: \[scrub symbol & string tables, \d+[\.,]\d+ secs\])? \[1 CMS-remark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexCMSi = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \[1 CMS\-initial\-mark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexCMSc = re.compile(r"(.*: )?\[(CMS-concurrent-abortable-preclean|CMS-concurrent-preclean|CMS-concurrent-mark): \d+[\.,]\d+\/\d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
@@ -70,6 +69,8 @@ class Parser(object):
             datum['user_time'] = float(regexParNew.match(line).group(6).replace(",","."))
             datum['sys_time'] = float(regexParNew.match(line).group(7).replace(",","."))
             datum['real_time'] = float(regexParNew.match(line).group(8).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexParNew.match(line).group(8).replace(",","."))
 
         elif regexDefNew.match(line):
             datum['type'] = 'def_new'
@@ -81,6 +82,8 @@ class Parser(object):
             datum['user_time'] = float(regexDefNew.match(line).group(6).replace(",","."))
             datum['sys_time'] = float(regexDefNew.match(line).group(7).replace(",","."))
             datum['real_time'] = float(regexDefNew.match(line).group(8).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexDefNew.match(line).group(8).replace(",","."))
 
         elif regexProFail.match(line):
             datum['type'] = 'promotion_failure'
@@ -96,6 +99,8 @@ class Parser(object):
             datum['user_time'] = float(regexProFail.match(line).group(10).replace(",","."))
             datum['sys_time'] = float(regexProFail.match(line).group(11).replace(",","."))
             datum['real_time'] = float(regexProFail.match(line).group(12).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexProFail.match(line).group(12).replace(",","."))
 
         elif regexPSY.match(line):
             datum['type'] = 'ps_young_gen'
@@ -107,10 +112,8 @@ class Parser(object):
             datum['user_time'] = float(regexPSY.match(line).group(6).replace(",","."))
             datum['sys_time'] = float(regexPSY.match(line).group(7).replace(",","."))
             datum['real_time'] = float(regexPSY.match(line).group(8).replace(",","."))
-
-        elif regexCMS.match(line):
-            datum['timestamp'] = regexCMS.match(line).group(1)
-            datum['type'] = self.underscore(regexCMS.match(line).group(2))
+            # STW 
+            datum['stw'] = float(regexPSY.match(line).group(8).replace(",","."))
 
         elif regexCMSr.match(line):
             datum['type'] = 'cms_remark'
@@ -118,6 +121,8 @@ class Parser(object):
             datum['user_time'] = float(regexCMSr.match(line).group(2).replace(",","."))
             datum['sys_time'] = float(regexCMSr.match(line).group(3).replace(",","."))
             datum['real_time'] = float(regexCMSr.match(line).group(4).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexCMSr.match(line).group(4).replace(",","."))
 
         elif regexCMSi.match(line):
             datum['type'] = 'cms_initial_mark'
@@ -125,6 +130,8 @@ class Parser(object):
             datum['user_time'] = float(regexCMSi.match(line).group(2).replace(",","."))
             datum['sys_time'] = float(regexCMSi.match(line).group(3).replace(",","."))
             datum['real_time'] = float(regexCMSi.match(line).group(4).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexCMSi.match(line).group(4).replace(",","."))
 
         elif regexCMSc.match(line):
             datum['timestamp'] = regexCMSc.match(line).group(1)
@@ -153,6 +160,8 @@ class Parser(object):
             datum['user_time'] = float(regexFull.match(line).group(8).replace(",","."))
             datum['sys_time'] = float(regexFull.match(line).group(9).replace(",","."))
             datum['real_time'] = float(regexFull.match(line).group(10).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexFull.match(line).group(10).replace(",","."))
 
         elif regexFulln.match(line):
             datum['type'] = 'full'
@@ -168,9 +177,12 @@ class Parser(object):
             datum['user_time'] = float(regexFulln.match(line).group(10).replace(",","."))
             datum['sys_time'] = float(regexFulln.match(line).group(11).replace(",","."))
             datum['real_time'] = float(regexFulln.match(line).group(12).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexCMSi.match(line).group(12).replace(",","."))
 
         elif regexFullc.match(line):
             datum['type'] = 'full'
+            datum['cmf'] = 1    # concurrent mode failure
             datum['timestamp'] = regexFullc.match(line).group(1)
             datum['oldgen_kb_before'] = int(regexFullc.match(line).group(2))
             datum['oldgen_kb_after'] = int(regexFullc.match(line).group(3))
@@ -181,9 +193,12 @@ class Parser(object):
             datum['user_time'] = float(regexFullc.match(line).group(8).replace(",","."))
             datum['sys_time'] = float(regexFullc.match(line).group(9).replace(",","."))
             datum['real_time'] = float(regexFullc.match(line).group(10).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexCMSi.match(line).group(10).replace(",","."))
 
         elif regexFullf.match(line):
             datum['type'] = 'full'
+            datum['cmf'] = 1    # concurrent mode failure
             datum['oldgen_kb_before'] = int(regexFullf.match(line).group(1))
             datum['oldgen_kb_after'] = int(regexFullf.match(line).group(2))
             datum['total_kb_before'] = int(regexFullf.match(line).group(3))
@@ -193,6 +208,8 @@ class Parser(object):
             datum['user_time'] = float(regexFullf.match(line).group(7).replace(",","."))
             datum['sys_time'] = float(regexFullf.match(line).group(8).replace(",","."))
             datum['real_time'] = float(regexFullf.match(line).group(9).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexFullf.match(line).group(9).replace(",","."))
 
         elif regexFullg.match(line):
             datum['type'] = 'full'
@@ -207,6 +224,8 @@ class Parser(object):
             datum['user_time'] = float(regexFullg.match(line).group(10).replace(",","."))
             datum['sys_time'] = float(regexFullg.match(line).group(11).replace(",","."))
             datum['real_time'] = float(regexFullg.match(line).group(12).replace(",","."))
+            # STW 
+            datum['stw'] = float(regexFullg.match(line).group(12).replace(",","."))
 
         else:
             self.data['errors'] += 1
@@ -219,33 +238,46 @@ class Parser(object):
             type = datum['type']
 
             # metrics regardless of type
+            timeSinceStart = time.time() - self.startTime
+            self.data['seconds_since_last_reset'] = '%.2f' % timeSinceStart
             if not self.data[service]['count']:
                 self.data[service]['count'] = 0
                 self.data[service]['avg_time_between_any_type_collections'] = 0
+                self.data[service]['stw_overall'] = 0
             self.data[service]['count'] += 1
             self.data[service]['avg_time_between_any_type_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
+            if 'stw' in datum:
+                self.data[service]['stw_overall'] = '%.2f' % float(float(self.data[service]['stw_overall']) + datum['stw'])
+                self.data[service]['stw_percentage'] = '%.2f' % float(100 * float(self.data[service]['stw_overall']) / float(self.data['seconds_since_last_reset']))
+            if 'cmf' in datum:
+                if not self.data[service]['cmf_overall']:
+                    self.data[service]['cmf_overall'] = 0
+                self.data[service]['cmf_overall'] += 1
 
             # metrics that get collected with every GC type
             # total number of collections
             self.data[service][type]['count'] += 1
             # frequency of collections
             self.data[service][type]['avg_time_between_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service][type]['count'])
-            if not regexCMS.match(line): # except types like cms_concurrent_mark_start
-                # longest time spent in collection
-                if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
-                    self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time']
-                if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
-                    self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time']
-                if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
-                    self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time']
-                # total time spent in collection
-                self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
-                self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
-                self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
-                # average time spent in collection
-                self.data[service][type]['avg_real_time'] = '%.3f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_sys_time'] = '%.3f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
-                self.data[service][type]['avg_user_time'] = '%.3f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
+
+            # longest time spent in collection
+            if float(datum['real_time']) > float(self.data[service][type]['max_real_time']):
+                self.data[service][type]['max_real_time'] = '%.2f' % datum['real_time']
+            if float(datum['user_time']) > float(self.data[service][type]['max_user_time']):
+                self.data[service][type]['max_user_time'] = '%.2f' % datum['user_time']
+            if float(datum['sys_time']) > float(self.data[service][type]['max_sys_time']):
+                self.data[service][type]['max_sys_time'] = '%.2f' % datum['sys_time']
+            # total time spent in collection
+            self.data[service][type]['real_time'] = '%.2f' % float(float(self.data[service][type]['real_time']) + datum['real_time'])
+            self.data[service][type]['sys_time'] = '%.2f' % float(float(self.data[service][type]['sys_time']) + datum['sys_time'])
+            self.data[service][type]['user_time'] = '%.2f' % float(float(self.data[service][type]['user_time']) + datum['user_time'])
+            # total stw time
+            if 'stw' in datum:
+                self.data[service][type]['stw'] = '%.2f' % float(float(self.data[service][type]['stw']) + datum['stw'])
+            # average time spent in collection
+            self.data[service][type]['avg_real_time'] = '%.3f' % float(float(self.data[service][type]['real_time']) / self.data[service][type]['count'])
+            self.data[service][type]['avg_sys_time'] = '%.3f' % float(float(self.data[service][type]['sys_time']) / self.data[service][type]['count'])
+            self.data[service][type]['avg_user_time'] = '%.3f' % float(float(self.data[service][type]['user_time']) / self.data[service][type]['count'])
 
 
             #print "type:", type
