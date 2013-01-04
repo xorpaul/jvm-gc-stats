@@ -182,18 +182,25 @@ def main():
                 'float', 'Seconds', options.stat_timeout, options.dryrun)
         else:
             for gctype, service_metric_value in resultDict[service].iteritems():
+                #print repr(gctype)
                 if gctype == 'count':
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'count', options.stat_timeout, options.dryrun)
-                elif gctype == 'avg_time_between_any_type_collections':
+                elif gctype in ('avg_time_between_any_type_collections', 'stw_overall'):
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'float', 'Seconds', options.stat_timeout, options.dryrun)
                 elif ('allocated') in gctype:
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'Kilobytes', options.stat_timeout, options.dryrun)
+                elif ('percentage') in gctype:
+                    callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
+                        'int16', 'percentage', options.stat_timeout, options.dryrun)
                 else:
+                    #print repr(gctype)
+                    if gctype in ('cms_concurrent_sweep', 'cms_concurrent_reset', 'cms_concurrent_preclean', 'cms_concurrent_mark', 'cms_concurrent_abortable_preclean'):
+                        break
                     for metric, value in resultDict[service][gctype].iteritems():
-                        if ('time') in metric:
+                        if 'time' in metric or 'stw' in metric:
                             callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
                                 'float', 'Seconds', options.stat_timeout, options.dryrun)
                         elif metric.endswith('_collected'):
