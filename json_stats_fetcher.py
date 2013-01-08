@@ -183,7 +183,7 @@ def main():
         else:
             for gctype, service_metric_value in resultDict[service].iteritems():
                 #print repr(gctype)
-                if gctype == 'count':
+                if gctype in ('count', 'cmf_overall'):
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'count', options.stat_timeout, options.dryrun)
                 elif gctype in ('avg_time_between_any_type_collections', 'stw_overall'):
@@ -195,7 +195,7 @@ def main():
                 elif ('percentage') in gctype:
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'percentage', options.stat_timeout, options.dryrun)
-                else:
+                elif hasattr(resultDict[service][gctype], '__iter__'):
                     #print repr(gctype)
                     if gctype in ('cms_concurrent_sweep', 'cms_concurrent_reset', 'cms_concurrent_preclean', 'cms_concurrent_mark', 'cms_concurrent_abortable_preclean'):
                         break
@@ -211,6 +211,8 @@ def main():
                                 'int16', 'count', options.stat_timeout, options.dryrun)
                         else:
                             print "undefinded metric:", metric
+		else:
+		    print "undefinded metric:", metric
 
 
 def callGmetric(spoof, group, name, value, type, unit, stat_timeout, dryrun):
