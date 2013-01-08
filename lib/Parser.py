@@ -178,7 +178,7 @@ class Parser(object):
             datum['sys_time'] = float(regexFulln.match(line).group(11).replace(",","."))
             datum['real_time'] = float(regexFulln.match(line).group(12).replace(",","."))
             # STW 
-            datum['stw'] = float(regexCMSi.match(line).group(12).replace(",","."))
+            datum['stw'] = float(regexFulln.match(line).group(12).replace(",","."))
 
         elif regexFullc.match(line):
             datum['type'] = 'full'
@@ -248,7 +248,8 @@ class Parser(object):
             self.data[service]['avg_time_between_any_type_collections'] = '%.2f' % float(float(self.data['seconds_since_last_reset']) / self.data[service]['count'])
             if 'stw' in datum:
                 self.data[service]['stw_overall'] = '%.2f' % float(float(self.data[service]['stw_overall']) + datum['stw'])
-                self.data[service]['stw_percentage'] = '%.2f' % float(100 * float(self.data[service]['stw_overall']) / float(self.data['seconds_since_last_reset']))
+                if float(self.data['seconds_since_last_reset']) > 0:
+                    self.data[service]['stw_percentage'] = '%.2f' % float(100 * float(self.data[service]['stw_overall']) / float(self.data['seconds_since_last_reset']))
             if 'cmf' in datum:
                 if not self.data[service]['cmf_overall']:
                     self.data[service]['cmf_overall'] = 0
