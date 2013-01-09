@@ -29,6 +29,7 @@ class Parser(object):
         if not self.__init:
             self.pid = None
             # also initializes the data dict
+            self.hidden_data = DefaultDict((DefaultDict(DefaultDict(0), **DefaultDict(0))), **DefaultDict(0))
             self.clearData()
             self.__init = True
 
@@ -342,8 +343,16 @@ class Parser(object):
 
         Gets called from every GET HTTP request.
         """
-        timeSinceStart = time.time() - self.startTime
-        self.data['seconds_since_last_reset'] = '%.2f' % timeSinceStart
+        currentTime = time.time()
+        self.data['seconds_since_last_reset'] = '%.2f' % (currentTime - self.startTime)
+        for service in self.data:
+          if not service in ('errors', 'seconds_since_last_reset'):
+            if self.hidden_data[service]['stw_overall']:
+              self.data[service]['stw_since_last_call'] = '%.2f' %  float(float(self.data[service]['stw_overall']) - self.hidden_data[service]['stw_overall'])
+            
+            if self.data[service]['stw_overall']:
+              self.hidden_data[service]['stw_overall'] = float(self.data[service]['stw_overall'])
+              self.hidden_data[service]['timestamp'] = currentTime
 
         if pretty:
             return json.dumps(self.data, sort_keys=True, indent=4)
