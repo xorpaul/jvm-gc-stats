@@ -186,7 +186,7 @@ def main():
                 if gctype in ('count', 'cmf_overall'):
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'count', options.stat_timeout, options.dryrun)
-                elif gctype in ('avg_time_between_any_type_collections', 'stw_overall'):
+                elif gctype in ('avg_time_between_any_type_collections', 'stw_overall', 'stw_since_last_call'):
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'float', 'Seconds', options.stat_timeout, options.dryrun)
                 elif ('allocated') in gctype:
