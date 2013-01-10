@@ -162,9 +162,9 @@ def main():
         sys.exit(1)
 
 
-    #if options.debug:
-    #    pprint(resultDict)
-    #    print "key: %s - values: %s" % (k, v)
+    if options.debug:
+        pprint(resultDict)
+        #print "key: %s - values: %s" % (k, v)
 
     if options.prefix != '':
       prefix = options.prefix + '.'
@@ -181,8 +181,9 @@ def main():
             callGmetric(options.spoof, 'general', service, v,
                 'float', 'Seconds', options.stat_timeout, options.dryrun)
         else:
+            #print repr(resultDict[service]), "test"
             for gctype, service_metric_value in resultDict[service].iteritems():
-                #print repr(gctype)
+                #print "####################", gctype, "####################"
                 if gctype in ('count', 'cmf_overall'):
                     callGmetric(options.spoof, service, service+'.'+gctype, service_metric_value,
                         'int16', 'count', options.stat_timeout, options.dryrun)
@@ -198,7 +199,7 @@ def main():
                 elif hasattr(resultDict[service][gctype], '__iter__'):
                     #print repr(gctype)
                     if gctype in ('cms_concurrent_sweep', 'cms_concurrent_reset', 'cms_concurrent_preclean', 'cms_concurrent_mark', 'cms_concurrent_abortable_preclean'):
-                        break
+                        continue
                     for metric, value in resultDict[service][gctype].iteritems():
                         if 'time' in metric or 'stw' in metric:
                             callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
@@ -210,9 +211,9 @@ def main():
                             callGmetric(options.spoof, service, service+'.'+gctype+'.'+metric, value,
                                 'int16', 'count', options.stat_timeout, options.dryrun)
                         else:
-                            print "undefinded metric:", metric
+                            print "undefinded metric:", gctype
 		else:
-		    print "undefinded metric:", metric
+		    print "undefinded metric:", gctype
 
 
 def callGmetric(spoof, group, name, value, type, unit, stat_timeout, dryrun):
