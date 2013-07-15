@@ -77,7 +77,8 @@ class Tailer:
         regexIgnoreTenuringDist1 = re.compile(r'Desired survivor size \d+ bytes, new threshold \d+ \(max \d+\)')
         regexIgnoreTenuringDist2 = re.compile(r'- age\s+\d+:')
         regexIgnoreNullChar = re.compile(r'\x00')
-        regexIgnoreCMS = re.compile(r"(.*: )?\d+[\.,]\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]")
+        regexIgnoreCMS = re.compile(r'(.*: )?\d+[\.,]\d+: \[(CMS-concurrent-mark-start|CMS-concurrent-preclean-start|CMS-concurrent-abortable-preclean-start|CMS-concurrent-sweep-start|CMS-concurrent-reset-start)\]')
+	regexIgnoreScavengeFail = re.compile(r'GC locker: Trying a full collection because scavenge failed')
 
         while True:
             self.pos = self.fd.tell()
@@ -136,7 +137,8 @@ class Tailer:
                  and not regexIgnoreTenuringDist1.match(line)
                  and not regexIgnoreTenuringDist2.match(line)
                  and not regexIgnoreNullChar.match(line)
-                 and not regexIgnoreCMS.match(line)):
+                 and not regexIgnoreCMS.match(line)
+                 and not regexIgnoreScavengeFail.match(line)):
                 # current read has newline char at the end and
                 # also checks if current read is 'Heap' if JVM got
                 # terminated
