@@ -47,7 +47,7 @@ class Parser(object):
         regexDefNew = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[DefNew: (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K\->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexProFail = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \d+[\.,]\d+: \[(?:Par|Def)New \(promotion failed\)\s*: (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[(?:CMS|Tenured): (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] (\d+)K->(\d+)K\(\d+K\), \[(?:CMS )?Perm : (\d+)K->(\d+)K\(\d+K\)\], \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexPSY = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC(?:--)? \[PSYoungGen: (\d+)K->(\d+)K\(\d+K\)\] (\d+)K->(\d+)K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
-        regexCMSr = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC\[YG occupancy: \d+ K \(\d+ K\)\]\d+[\.,]\d+: \[Rescan \(parallel\) , \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[weak refs processing, \d+[\.,]\d+ secs\](?:\d+[\.,]\d+: \[class unloading, \d+[\.,]\d+ secs\])?(?:\d+[\.,]\d+: \[scrub symbol & string tables, \d+[\.,]\d+ secs\])? \[1 CMS-remark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
+        regexCMSr = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC\[YG occupancy: \d+ K \(\d+ K\)\]\d+[\.,]\d+: \[Rescan \(parallel\) , \d+[\.,]\d+ secs\]\d+[\.,]\d+: \[weak refs processing, \d+[\.,]\d+ secs\](?:\d+[\.,]\d+: \[class unloading, \d+[\.,]\d+ secs\])?(?:\d+[\.,]\d+: \[scrub symbol & string tables, \d+[\.,]\d+ secs\])?(?:\d+[\.,]\d+: \[scrub symbol table, \d+[\.,]\d+ secs\])?(?:\d+[\.,]\d+: \[scrub string table, \d+[\.,]\d+ secs\])? \[1 CMS-remark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexCMSi = re.compile(r"(.*: )?\d+[\.,]\d+: \[GC \[1 CMS\-initial\-mark: \d+K\(\d+K\)\] \d+K\(\d+K\), \d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexCMSc = re.compile(r"(.*: )?\[(CMS-concurrent-abortable-preclean|CMS-concurrent-preclean|CMS-concurrent-mark): \d+[\.,]\d+\/\d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
         regexCMScs = re.compile(r"(.*: )?\d+[\.,]\d+: \[(CMS-concurrent-reset|CMS-concurrent-sweep): \d+[\.,]\d+\/\d+[\.,]\d+ secs\] \[Times: user=(\d+[\.,]\d+) sys=(\d+[\.,]\d+), real=(\d+[\.,]\d+) secs\]")
@@ -364,7 +364,20 @@ class Parser(object):
 
         Gets only used for the unittest.
         """
-        return self.data
+        cleaned_data = dict(self.data)
+        if 'avg_time_between_any_type_collections' in cleaned_data['test']:
+          del cleaned_data['test']['avg_time_between_any_type_collections']
+        if 'seconds_since_last_reset' in cleaned_data:
+          del cleaned_data['seconds_since_last_reset']
+        if 'stw_percentage' in cleaned_data['test']:
+          del cleaned_data['test']['stw_percentage']
+        # ugly :(
+        for i in cleaned_data['test']:
+          if isinstance(cleaned_data['test'][i], dict):
+            if 'avg_time_between_collections' in cleaned_data['test'][i]:
+              del cleaned_data['test'][i]['avg_time_between_collections']
+
+        return cleaned_data
 
     def clearData(self):
         self.data = DefaultDict((DefaultDict(DefaultDict(0), **DefaultDict(0))), **DefaultDict(0))
